@@ -63,9 +63,15 @@ ArmorIQ ships adapters for **Google ADK, LangChain and Strands** (Python and Typ
 - A held call waits `approvalWaitSeconds` (default 300) for an approval. A timeout counts as a refusal.
 - The MCP server must be reachable at a **public HTTPS URL**. Localhost does not work against the real platform.
 - The scope must always be closed in a `finally` block, or the audit trail is not flushed.
+- **Verified on Oct 10: `delegate()` is a core SDK method.** In TypeScript: `client.delegate(intentToken, delegatePublicKey, validitySeconds?, allowedActions?, targetAgent?)` returns `{ delegationId, delegatedToken, expiresAt, … }`.
+  - The delegate can run only the actions in `allowedActions`.
+  - The sub-agent needs its own Ed25519 key pair and calls `client.invoke(mcp, tool, delegatedToken, args)`.
+  - Delegation is **not** part of the LangChain adapter.
 
 **Open questions to resolve in Phase 1. Record each answer in `docs/DECISIONS.md`.** Use the docs first, then ask in the hackathon channel.
 1. **Approval API:** is there an API or SDK method to approve or reject a held call **programmatically**? Without one, approvals only happen in the console. Search the docs for "approval", "hold" and "approve". The voice design in §8 depends on this answer.
+   - **Lead (Oct 10):** the organisers' idea list mentions `delegation_id` and `await_approval()`. The Strands docs say a hold "waits asynchronously for the delegation decision" and polls every `approval_poll_interval` (5 s).
+   - **Still unconfirmed:** whether our code can *submit* that decision.
 2. **Per-user limits:** can a user record carry an order limit that a policy reads? If not, write one threshold policy per user.
 3. **Approver accounts:** do approvers or test users have to be real platform accounts? `owner@shop.test` may not be able to log in to approve.
 4. **Deadline:** at what exact time, and in which timezone, does submission close on Oct 17?
@@ -76,7 +82,7 @@ ArmorIQ ships adapters for **Google ADK, LangChain and Strands** (Python and Typ
 ## 2. Architecture
 
 ```
-React dashboard ──HTTP/SSE──► Agent service ──ArmorIQ SDK──► ArmorIQ proxy ──► Procurement MCP server ──► Sandbox DB
+React dashboard ──HTTP/SSE──► Agent service ──ArmorIQ SDK──► ArmorIQ proxy ──► Procurement MCP server ──► In-memory store
      ▲                         (LLM via <CHOICE>,                (plan, token,        (stateless tools,        (inventory, suppliers,
      │                          framework adapter)                allow/hold/block)    public HTTPS /mcp)        quotes, orders, payees)
      │                               │
@@ -109,6 +115,8 @@ guarded-procurement/
   docs/DECISIONS.md         # answers to open questions, trade-offs
   docs/ARMORIQ_SETUP.md     # exact console steps, names and policy table (screenshots go here)
   docs/screenshots/
+  CLAUDE.md                 # code rules every coding session must follow
+  shared/src/log.ts         # the one logger both servers use
   mcp-server/
     src/tools/              # one file per tool group: reads, writes, money, dangerous
     src/store/              # in-memory store, seed loader, reset
@@ -233,6 +241,14 @@ Cover **every** tool that can move money or change payees. If a sibling tool is 
 
 **`armoriq: false`** runs the same agent with no scope. This exists only for the "without ArmorIQ" comparison in the video. It must never be the default. Label it **"ArmorIQ disabled – comparison only"** in the UI, the logs and the video, so judges never mistake it for a simulated result.
 
+**Stretch goal: delegation (Phase 4b, cut-off Oct 15).** This is built only after single-agent scenes 1–3 pass.
+- An **orchestrator** signs the overall plan, then calls `delegate()` twice:
+  - **Quote Reader**: `allowedActions` = the four read tools. It reads untrusted supplier documents.
+  - **Buyer**: `allowedActions` = `place_order` only, still under the user's limit.
+- In scene 3 the poisoned quote hijacks the Quote Reader. Its `update_payee_bank` attempt is refused because that authority was **never delegated**.
+- Keep the `payee-and-destructive-denied` policy anyway, so the single-agent fallback still blocks.
+- If delegation isn't working by Oct 15, ship the single-agent version and leave it out of the README.
+
 **`scripts/check-setup`** prints OK or FAIL for each of: MCP reachable with 10 tools; API key valid; agent name registered; MCP name registered; at least one policy exists. It is read-only.
 
 **`scripts/run-scenario 1|2|3`** runs the scenes headless and prints the decision log. Use it for testing and as a fallback in the video.
@@ -247,7 +263,7 @@ Cover **every** tool that can move money or change payees. If a sibling tool is 
 3. The voice agent says, for example: "Your purchasing agent wants to place a ₹2,00,000 order with Konkan Engine Works for engine parts. This is above the manager's limit. Do you approve?"
 4. The owner's yes or no is captured, using an ElevenLabs client tool or webhook that posts to `POST /approvals/:id { decision }`.
 5. **Resolving the hold depends on the Phase 1 answer:**
-   - **If an approval API exists:** the agent service calls it with the decision. ArmorIQ emits `approved` or `rejected`, and the run continues.
+   - **If an approval API exists** (the preferred path; see `await_approval()` and `delegation_id` in §1): the agent service submits the owner's decision for that hold. ArmorIQ emits `approved` or `rejected`, and the run continues with no console click.
    - **If no approval API exists:** the voice step records the owner's decision and the dashboard shows "Approve in ArmorIQ console" with a link. The video shows the console approval right after the voice confirmation. **Do not fake an approval.** Note this limitation in the README.
 6. **Fallback:** if voice fails or credits run out, the console approval always works. Keep `approvalWaitSeconds` at about 60 for the demo.
 
@@ -263,6 +279,7 @@ Cover **every** tool that can move money or change payees. If a sibling tool is 
 - **Side panels:** inventory (stock vs reorder level), orders (newest first), suppliers with their current masked payee account. During the scam scene this panel proves the account **did not change**.
 - **Approval card:** appears on a hold with the amount, supplier and reason, plus the voice session controls and the console link.
 - **Agent answer:** the final message, shown at the bottom of the run.
+- **Receipt panel** (trust track): for each run, shows the signed plan hash or proof, and what was planned vs allowed vs blocked. Only if ArmorIQ's trace or proof export API is simple to call. Otherwise, use the console screenshot.
 - **After an OFF run:** auto-reset, or show a persistent "payee tampered, reset" banner, so the next ON take never starts from corrupted state.
 - States: loading, empty, API-down banner, run-in-progress. No layout shift while events stream.
 
@@ -287,18 +304,21 @@ Record which model and prompt reproduce it reliably in `docs/DECISIONS.md`. Neve
 | Phase | Work | Exit criteria |
 |---|---|---|
 | 1. Setup | Repo, env validation, ArmorIQ account, key, open questions answered | `docs/DECISIONS.md` has the answers; env fails fast when a key is missing |
-| 2. MCP server | DB, seed, reset, 10 tools, `/health`, deploy to a public HTTPS URL | `tools/list` on the deployed URL returns 10 tools; reset restores the seed |
+| 2. MCP server | In-memory store, seed, reset, 10 tools, `/health`, `/state`, logging, Docker; public URL through ngrok | `tools/list` on the public URL returns 10 tools; reset restores the seed |
 | 3. Console | Register agent and MCP, users, policies (in order) | `check-setup` prints all OK |
 | 4. Agent + ArmorIQ | Agent loop, scope, events, `run-scenario` CLI | Scenes 1 and 3 pass headless with real ArmorIQ verdicts; the block is visible in the console. **This is the eligibility milestone; target Oct 13.** |
 | 5. Hold path | Scene 2 with console approval | Scene 2 passes using console approval |
 | 6. Dashboard | Feed, panels, scenario buttons, toggle, SSE | All scenes run from the UI without a reload |
-| 7. Voice | ElevenLabs session on hold, decision capture, resolve per §8 | Scene 2 passes with voice; the console fallback still works |
+| 7. Voice | ElevenLabs session on hold, decision capture, resolve per §8 (`await_approval` path if it exists) | Scene 2 passes with voice; the console fallback still works |
+| 7b. Receipt (stretch) | Receipt panel from the trace or proof export (§9) | Each run shows its plan hash and verdicts |
+| 4b. Delegation (stretch, **cut-off Oct 15**) | Orchestrator, Quote Reader and Buyer via `delegate()` (§7) | Scene 3 is refused because the Quote Reader was never delegated `update_payee_bank` |
 | 8. Polish + submit | README, screenshots, video, description | Submission checklist (§15) and `docs/COMPLIANCE.md` complete |
 
 If time runs short, cut in this order:
-1. the free-text prompt box
-2. `delete_supplier` and `export_supplier_list` (keep `update_payee_bank`)
-3. voice, falling back to console approval and saying so in the README
+1. delegation (4b), then the receipt panel (7b)
+2. the free-text prompt box
+3. `delete_supplier` and `export_supplier_list` (keep `update_payee_bank`)
+4. voice, falling back to console approval and saying so in the README
 
 **Never cut:** real ArmorIQ allow and block, the poisoned quote, `check-setup`.
 
@@ -316,14 +336,42 @@ Use Vitest. Run the unit, contract and guard tests on every change.
 
 ## 13. Engineering rules
 
-1. Env is read once in `config`, validated at startup, and the service fails fast. No secrets in the repo; `.env.example` lists every variable.
-2. **No permission logic in the MCP server or the agent code.** All allow/hold/block decisions come from ArmorIQ.
-3. Structured logs with event names: `run.started`, `tool.call`, `armoriq.allowed`, `armoriq.hold`, `armoriq.block`, `armoriq.approved`, `run.final`. No secrets or full documents in logs.
-4. The ArmorIQ scope is always closed in `finally`.
-5. Retry LLM calls with backoff on 429/5xx. Never retry a refused tool call.
-6. Small files, intention-revealing names, no dead code, no TODOs in the final repo.
-7. Every run is reproducible from `reset` plus a scenario id.
-8. Commit small and often with real timestamps; never squash or force-push `main`. The git history is our evidence for hackathon rule 5.
+### Code rules (strict)
+These rules are also in the repo's `CLAUDE.md`, so every coding session follows them.
+1. **Clean and simple.** Write the plainest code that works. No over-engineering, and no speculative abstraction, option or config.
+2. **No redundancy.** Write each piece of logic once. Shared code lives in `shared/` only when two packages actually use it.
+3. **Composable, not tightly coupled.** Pass dependencies in as arguments (store, logger, config); no module-level globals. A function can be tested without starting a server.
+4. **Only the layers we need.** No repository, service or controller layers by default. A layer exists only when it removes real duplication.
+5. **Declarative, simple names.** A name says what the thing is or does, e.g. `createStore`, `placeOrder`, `readQuoteDocument`, `allTools`. No `utils`, `helpers`, `manager` or `handler2`.
+6. **Log every meaningful step**, using the logging pattern below.
+
+### Project rules
+7. Env is read once per service, validated at startup with zod, and the service fails fast. No secrets in the repo; `.env.example` lists every variable.
+8. **No permission logic in the MCP server or the agent code.** All allow/hold/block decisions come from ArmorIQ.
+9. The ArmorIQ scope is always closed in `finally`.
+10. Retry LLM calls with backoff on 429/5xx. Never retry a refused tool call.
+11. Small files, no dead code, no TODOs in the final repo.
+12. Every run is reproducible from `reset` plus a scenario id.
+13. Commit small and often with real timestamps; never squash or force-push `main`. The git history is our evidence for hackathon rule 5. The user runs the commits.
+
+### Logging pattern
+One small logger (`shared/src/log.ts`, `createLogger(service)`), with no dependency. It writes one readable line per event:
+
+```
+2026-10-10T10:00:00.123Z INFO  [mcp-server] tool.call.succeeded requestId=k3f9 tool=place_order orderId=ORD-0001 durationMs=4
+```
+
+- **Event names** follow `area.action.outcome`, and each name is logged from exactly one place, so grepping for it finds the code.
+- **Levels:** `debug`, `info`, `warn` and `error`, set by `LOG_LEVEL` (default `info`). `warn` is for refusals and rejections; `error` is for unexpected failures.
+- **Correlation:** the agent service generates a `runId` and sends it to the MCP server as `x-request-id`. Every line carries `requestId` or `runId`, so one id follows a run across services. Child loggers (`log.child({ runId })`) attach it automatically.
+- **Values:** plain text if there are no spaces, otherwise JSON. Any value over 200 chars is truncated.
+- **Never logged:** secrets, API keys or full document text. For document text, only `textLength` is logged.
+- **Logging happens in wrappers, not in every function.** For example, one wrapper logs every tool call, so individual tools never log.
+
+| Service | Events |
+|---|---|
+| mcp-server | `server.started`, `store.seeded`, `store.reset`, `http.request.completed`, `tool.call.started`, `tool.call.succeeded`, `tool.call.rejected`, `tool.call.failed`, `reset.denied` |
+| agent-service | `server.started`, `run.started`, `run.tools.loaded`, `llm.call.retried`, `armoriq.scope.opened`, `armoriq.call.allowed`, `armoriq.call.held`, `armoriq.call.approved`, `armoriq.call.rejected`, `armoriq.call.timeout`, `armoriq.call.blocked`, `armoriq.scope.closed`, `approval.requested`, `approval.decided`, `run.completed`, `run.failed` |
 
 ## 14. `.env.example`
 
@@ -371,4 +419,4 @@ AGENT_SERVICE_URL=http://localhost:8787
 3. **25–50 s:** Scene 2. The ₹2L order is **held**, the voice agent asks the owner, the owner says "approve", and the order runs.
 4. **50–75 s:** Scene 3. The agent reads the Apex quote, tries to change the bank account, and **ArmorIQ blocks it**. The payee panel is unchanged and the agent flags the quote.
 5. **75–85 s:** Flash the ArmorIQ console trace of the block (matched policy and signed plan).
-6. **85–90 s:** Optional, quick: ArmorIQ OFF, shown on screen as "comparison only", and the same scam succeeds. "The model was fooled. The action still didn't happen."
+6. **85–90 s:** Split screen: the same scam with ArmorIQ OFF (labelled "comparison only"; the bank account changes) next to ArmorIQ ON (blocked). "The model was fooled. The action still didn't happen."
