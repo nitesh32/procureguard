@@ -2,6 +2,16 @@
 
 Answers to open questions and trade-offs, newest first.
 
+## 2026-10-11
+
+### Verified in the `@armoriq/sdk@0.6.10` package source
+- **There's no SDK method to approve or reject a hold.** The client can only create, check, poll and mark delegations executed (endpoints `/delegation/create`, `/delegation/request`, `/delegation/check-approved`, `/delegation/mark-executed`, `/delegation/my-role`). **Decision:** the approver approves in the ArmorIQ console. The voice step records the owner's answer and tells them to approve in the console. The held call then resumes on its own, because the adapter polls every 5 s. We never fake an approval. The README lists this as a limitation.
+- **The LangChain adapter:**
+  - `new ArmorIQLangChain({ client, defaultMcpName, approvalWaitSeconds })`, then `await armoriq.forUser(email, { goal, onEvent })` returns a callback handler.
+  - Pass it as `{ callbacks: [handler] }`, and call `await handler.close()` in `finally`.
+  - On a block or unapproved hold, the handler throws. LangChain turns that into a tool error the model reads, and the tool never runs.
+- **`onEvent` kinds:** `hold { tool, delegationId, reason }`, `approved`, `rejected`, `timeout`, `block { tool, reason }` and `error`. **There's no `allow` event.** In our feed, "allowed" means the tool actually ran while the ArmorIQ handler was active, observed through LangChain's tool-end callback. It's derived from real execution and never decided by our code.
+
 ## 2026-10-10
 
 ### Stack
@@ -22,7 +32,7 @@ We compared our idea against the organisers' 13 suggested ideas and **kept the p
 - On a hold, the adapter "waits asynchronously for the delegation decision" and polls every 5 s (`approval_poll_interval`).
 
 ### Still open
-- Can our code **submit** an approval decision, or must a human approve in the console?
+- ~~Can our code **submit** an approval decision?~~ **No. Resolved on Oct 11 (see above).**
 - Can a user record carry an order limit that a policy reads, or do we need one policy per user?
 - Do approvers have to be real platform accounts?
 - What time and timezone does the deadline close, and what are the judging criteria?

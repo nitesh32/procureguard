@@ -5,7 +5,7 @@ The stack decided for the Guarded Procurement Agent. The blueprint is in [docs/B
 | Layer | Choice | Notes |
 |---|---|---|
 | Language | TypeScript on Node 22 | One pnpm workspace with three packages: `mcp-server`, `agent-service`, `dashboard` |
-| Agent framework | LangChain.js + `@armoriq/sdk` (`ArmorIQLangChain`) | Full allow, hold and block, per-user `forUser(email)`, and live enforcement events. Google ADK has no live events, so it's out. Fallback if the adapter misbehaves: Strands TypeScript. |
+| Agent framework | LangChain.js (`langchain` `createAgent`, `@langchain/core`, `@langchain/openai`) + `@armoriq/sdk` (`ArmorIQLangChain`) | Full allow, hold and block, per-user `forUser(email)`, and live enforcement events. Google ADK has no live events, so it's out. Fallback if the adapter misbehaves: Strands TypeScript. |
 | MCP tool loading | `@langchain/mcp-adapters` | Tools are loaded from the server, never hand-written |
 | LLM | OpenRouter (OpenAI-compatible) via `@langchain/openai` | Set by `LLM_MODEL_DEV` and `LLM_MODEL_DEMO`. Swappable so we can find a model that reproduces scene 3. |
 | MCP server | `@modelcontextprotocol/sdk` (Streamable HTTP) on Hono | `/mcp` and `GET /health`. Stateless tools; no permission logic. |

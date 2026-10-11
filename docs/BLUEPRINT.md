@@ -229,7 +229,7 @@ Cover **every** tool that can move money or change payees. If a sibling tool is 
 3. If `armoriq`, open a scope for `userEmail` with `goal = prompt` and an `onEvent` handler, then install it on the agent.
 4. Stream every event to the run's event channel:
    - `call` (tool and args)
-   - `allowed`
+   - `allowed`: ArmorIQ has no allow event. This one is recorded when a tool actually finishes running while the ArmorIQ handler is active, so it comes from real execution.
    - `hold` (reason)
    - `approved`
    - `block` (reason and matched policy, if exposed)
@@ -263,8 +263,10 @@ Cover **every** tool that can move money or change payees. If a sibling tool is 
 3. The voice agent says, for example: "Your purchasing agent wants to place a ₹2,00,000 order with Konkan Engine Works for engine parts. This is above the manager's limit. Do you approve?"
 4. The owner's yes or no is captured, using an ElevenLabs client tool or webhook that posts to `POST /approvals/:id { decision }`.
 5. **Resolving the hold depends on the Phase 1 answer:**
-   - **If an approval API exists** (the preferred path; see `await_approval()` and `delegation_id` in §1): the agent service submits the owner's decision for that hold. ArmorIQ emits `approved` or `rejected`, and the run continues with no console click.
-   - **If no approval API exists:** the voice step records the owner's decision and the dashboard shows "Approve in ArmorIQ console" with a link. The video shows the console approval right after the voice confirmation. **Do not fake an approval.** Note this limitation in the README.
+   - **Verified on Oct 11: the SDK has no approve method** (see `docs/DECISIONS.md`).
+   - The voice step records the owner's decision (`POST /approvals/:runId`, logged as `approval.decided`), and the dashboard shows "Owner said yes, approve in ArmorIQ console" with a link.
+   - The held call resumes on its own when the console approval lands, because the adapter polls every 5 s and then emits `approved`.
+   - The video shows the console approval right after the voice confirmation. **Do not fake an approval.** Note this limitation in the README.
 6. **Fallback:** if voice fails or credits run out, the console approval always works. Keep `approvalWaitSeconds` at about 60 for the demo.
 
 ## 9. Dashboard (one screen)
