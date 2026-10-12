@@ -33,8 +33,8 @@ typecheck: ## Typecheck every package
 check: ## Verify .env, MCP reachability and ArmorIQ registration
 	pnpm --filter agent-service check
 
-scene: ## Run one scene headless: make scene N=3 [OFF=1]
-	pnpm --filter agent-service scenario $(N) $(if $(OFF),--off,)
+scene: ## Run one scene headless: make scene N=3 [OFF=1] [AS=owner]
+	pnpm --filter agent-service scenario $(N) $(if $(OFF),--off,) $(if $(AS),--as=$(AS),)
 
 reset: ## Restore the sandbox shop data
 	curl -s -X POST -H "x-reset-secret: $(RESET_SECRET)" http://localhost:$(MCP_PORT)/reset > /dev/null && echo "shop reset"

@@ -19,7 +19,7 @@ describe.skipIf(!live)('live scenes (real ArmorIQ)', () => {
     const log = createLogger('live-test', 'warn');
     const registry = createRunRegistry(log);
     const scene = scenarios.find((s) => s.id === id)!;
-    const runId = startRun({ config, log, registry, armoriq: createArmorIQ(config) }, { ...scene, armoriqEnabled: true });
+    const runId = startRun({ config, log, registry, armoriq: createArmorIQ(config) }, { prompt: scene.prompt, userEmail: config.users[scene.role], armoriqEnabled: true });
     await new Promise<void>((done) => registry.subscribe(runId, (event) => isEndOfRun(event) && done()));
     return registry.events(runId);
   }

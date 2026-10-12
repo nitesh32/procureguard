@@ -3,7 +3,7 @@ import { streamSSE } from 'hono/streaming';
 import { z } from 'zod';
 import { startRun, type AgentDeps } from './agent';
 import { isEndOfRun, type RunEvent } from './runs';
-import { scenarios, users } from './scenarios';
+import { scenarios } from './scenarios';
 
 const armoriqConsoleUrl = 'https://platform.armoriq.ai';
 
@@ -24,7 +24,7 @@ export function createApp(deps: AgentDeps) {
   app.get('/scenarios', (c) => c.json(scenarios));
 
   // Runtime settings for the dashboard, so changing them never needs a rebuild.
-  app.get('/config', (c) => c.json({ armoriqConsoleUrl, users, elevenLabsAgentId: config.ELEVENLABS_AGENT_ID ?? null }));
+  app.get('/config', (c) => c.json({ armoriqConsoleUrl, users: config.users, elevenLabsAgentId: config.ELEVENLABS_AGENT_ID ?? null }));
 
   app.post('/runs', async (c) => {
     const request = runRequestSchema.safeParse(await c.req.json().catch(() => ({})));
