@@ -3,7 +3,7 @@ import { streamSSE } from 'hono/streaming';
 import { z } from 'zod';
 import { startRun, type AgentDeps } from './agent';
 import { isEndOfRun, type RunEvent } from './runs';
-import { scenarios } from './scenarios';
+import { scenarios, users } from './scenarios';
 
 const armoriqConsoleUrl = 'https://platform.armoriq.ai';
 
@@ -17,11 +17,14 @@ const approvalSchema = z.object({ decision: z.enum(['approve', 'reject']) });
 export function createApp(deps: AgentDeps) {
   const { config, registry } = deps;
   const mcpBaseUrl = new URL('/', config.MCP_URL);
-  const app = new Hono();
+  const app = new Hono().basePath('/api');
 
   app.get('/health', (c) => c.json({ ok: true }));
 
   app.get('/scenarios', (c) => c.json(scenarios));
+
+  // Runtime settings for the dashboard, so changing them never needs a rebuild.
+  app.get('/config', (c) => c.json({ armoriqConsoleUrl, users, elevenLabsAgentId: config.ELEVENLABS_AGENT_ID ?? null }));
 
   app.post('/runs', async (c) => {
     const request = runRequestSchema.safeParse(await c.req.json().catch(() => ({})));

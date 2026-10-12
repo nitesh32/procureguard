@@ -4,9 +4,10 @@
   "type": "module",
   "packageManager": "pnpm@10.18.3",
   "scripts": {
-    "dev": "pnpm --parallel --filter mcp-server --filter agent-service dev",
+    "dev": "pnpm --parallel --filter mcp-server --filter agent-service --filter dashboard dev",
     "test": "vitest run",
-    "typecheck": "pnpm -r typecheck"
+    "typecheck": "pnpm -r typecheck",
+    "build": "pnpm --filter dashboard build"
   },
   "devDependencies": {
     "@types/node": "^22.20.5",

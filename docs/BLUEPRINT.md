@@ -390,7 +390,6 @@ LLM_BASE_URL=            # e.g. an OpenAI-compatible router
 LLM_API_KEY=
 LLM_MODEL_DEV=
 LLM_MODEL_DEMO=
-ELEVENLABS_API_KEY=
 ELEVENLABS_AGENT_ID=
 AGENT_SERVICE_URL=http://localhost:8787
 ```

@@ -1,12 +1,15 @@
 -include .env
 export
 
-.PHONY: install dev up down logs test test-live typecheck check scene reset
+.PHONY: install build dev up down logs test test-live typecheck check scene reset
 
 install: ## Install workspace dependencies
 	pnpm install
 
-dev: ## Run mcp-server and agent-service locally with hot reload
+build: ## Build the dashboard (served by agent-service on :8787)
+	pnpm build
+
+dev: ## Run mcp-server, agent-service and dashboard (http://localhost:5173) with hot reload
 	pnpm dev
 
 up: ## Run everything in Docker (incl. ngrok tunnel)

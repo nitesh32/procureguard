@@ -14,6 +14,7 @@ const configSchema = z.object({
   LLM_MODEL_DEV: z.string().min(1),
   LLM_MODEL_DEMO: z.string().min(1),
   LLM_PROFILE: z.enum(['dev', 'demo']).default('dev'),
+  ELEVENLABS_AGENT_ID: z.string().min(1).optional(),
 });
 
 export type Config = z.infer<typeof configSchema> & { llmModel: string };
