@@ -373,7 +373,7 @@ One small logger (`shared/src/log.ts`, `createLogger(service)`), with no depende
 | Service | Events |
 |---|---|
 | mcp-server | `server.started`, `store.seeded`, `store.reset`, `http.request.completed`, `tool.call.started`, `tool.call.succeeded`, `tool.call.rejected`, `tool.call.failed`, `reset.denied` |
-| agent-service | `server.started`, `run.started`, `run.tools.loaded`, `llm.call.retried`, `armoriq.scope.opened`, `armoriq.call.allowed`, `armoriq.call.held`, `armoriq.call.approved`, `armoriq.call.rejected`, `armoriq.call.timeout`, `armoriq.call.blocked`, `armoriq.scope.closed`, `approval.requested`, `approval.decided`, `run.completed`, `run.failed` |
+| agent-service | `server.started`, `run.started`, `run.tools.loaded`, `armoriq.scope.opened`, `tool.call.requested`, `tool.call.allowed`, `armoriq.call.held`, `armoriq.call.approved`, `armoriq.call.rejected`, `armoriq.call.timeout`, `armoriq.call.blocked`, `armoriq.enforcement.failed`, `tool.call.completed` (debug), `tool.call.errored`, `approval.decided`, `armoriq.scope.closed`, `run.completed`, `run.failed`. All run events are logged from one place, `createRunRegistry().record` in `agent-service/src/runs.ts`. LLM retries on 429/5xx are handled inside `ChatOpenAI` (`maxRetries: 3`). |
 
 ## 14. `.env.example`
 

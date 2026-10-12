@@ -1,12 +1,12 @@
 -include .env
 export
 
-.PHONY: install dev up down logs test typecheck reset
+.PHONY: install dev up down logs test test-live typecheck check scene reset
 
 install: ## Install workspace dependencies
 	pnpm install
 
-dev: ## Run services locally with hot reload
+dev: ## Run mcp-server and agent-service locally with hot reload
 	pnpm dev
 
 up: ## Run everything in Docker (incl. ngrok tunnel)
@@ -18,11 +18,20 @@ down: ## Stop Docker services
 logs: ## Follow Docker logs
 	docker compose logs -f
 
-test: ## Run unit, contract and guard tests
+test: ## Unit, contract and guard tests (no network)
 	pnpm test
+
+test-live: ## Real ArmorIQ + LLM scenes 1 and 3 (costs credits)
+	LIVE=1 pnpm vitest run agent-service/test/scenes.live.test.ts
 
 typecheck: ## Typecheck every package
 	pnpm typecheck
+
+check: ## Verify .env, MCP reachability and ArmorIQ registration
+	pnpm --filter agent-service check
+
+scene: ## Run one scene headless: make scene N=3 [OFF=1]
+	pnpm --filter agent-service scenario $(N) $(if $(OFF),--off,)
 
 reset: ## Restore the sandbox shop data
 	curl -s -X POST -H "x-reset-secret: $(RESET_SECRET)" http://localhost:$(MCP_PORT)/reset > /dev/null && echo "shop reset"

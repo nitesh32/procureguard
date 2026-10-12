@@ -4,7 +4,7 @@
   "type": "module",
   "packageManager": "pnpm@10.18.3",
   "scripts": {
-    "dev": "pnpm --parallel --filter mcp-server dev",
+    "dev": "pnpm --parallel --filter mcp-server --filter agent-service dev",
     "test": "vitest run",
     "typecheck": "pnpm -r typecheck"
   },
