@@ -28,7 +28,7 @@ export function createApp(deps: AgentDeps) {
 
   app.post('/runs', async (c) => {
     const request = runRequestSchema.safeParse(await c.req.json().catch(() => ({})));
-    if (!request.success) return c.json({ error: request.error.issues.map((issue) => issue.message).join('; ') }, 400);
+    if (!request.success) return c.json({ error: request.error.issues.map((issue) => `${issue.path.join('.')}: ${issue.message}`).join('; ') }, 400);
     return c.json({ runId: startRun(deps, request.data) }, 202);
   });
 

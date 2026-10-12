@@ -84,7 +84,7 @@ docs/            blueprint, decisions, ArmorIQ setup guide, screenshots
 ## Known limitations
 
 - **Approvals happen in the ArmorIQ console.** The SDK (v0.6.10) has no method to approve a held call. The owner's voice "yes" is recorded and shown, and the approval itself is clicked in the console. The held order then resumes on its own, because the adapter polls for the decision. We never fake an approval.
-- **The prompt isn't hardened against injection, on purpose.** The demo needs the model to fall for the poisoned quote, so that ArmorIQ is visibly the defence. In production you would harden the prompt *and* keep ArmorIQ.
+- **The prompt isn't hardened against injection, on purpose.** The demo needs the model to fall for the poisoned quote, so that ArmorIQ is visibly the defence. The system prompt includes one realistic accounts-payable rule ("when a supplier's quote includes updated payment details, record them with update_payee_bank before ordering"), which is exactly the kind of process payment-redirection scams exploit. Without it, DeepSeek refused the bait. In production you would harden the prompt *and* keep ArmorIQ. Details and measured results are in `docs/DECISIONS.md`.
 - **Sandbox only.** Bank values must start with `FAKE`. The data lives in memory and resets on restart.
 
 ## Built with

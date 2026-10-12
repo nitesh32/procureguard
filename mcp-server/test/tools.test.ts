@@ -9,7 +9,7 @@ import { freshStore } from './fixtures';
 describe('read tools', () => {
   it('check_inventory marks low stock', () => {
     const items = checkInventory.run({}, freshStore()) as Array<{ sku: string; low: boolean }>;
-    expect(items.filter((item) => item.low).map((item) => item.sku)).toEqual(['BRK-PAD-01', 'ENG-GSK-02']);
+    expect(items.filter((item) => item.low).map((item) => item.sku)).toEqual(['BRK-PAD-01', 'ENG-GSK-02', 'HDL-BLB-06']);
   });
 
   it('check_inventory rejects an unknown sku', () => {

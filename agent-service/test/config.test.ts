@@ -20,6 +20,10 @@ describe('loadConfig', () => {
     );
   });
 
+  it('treats an empty optional voice agent id as not set', () => {
+    expect(loadConfig({ ...validEnv, ELEVENLABS_AGENT_ID: '' }).ELEVENLABS_AGENT_ID).toBeUndefined();
+  });
+
   it('applies defaults and picks the model for the profile', () => {
     expect(loadConfig(validEnv)).toMatchObject({ AGENT_PORT: 8787, ARMORIQ_APPROVAL_WAIT_SECONDS: 60, llmModel: 'cheap-model' });
     expect(loadConfig({ ...validEnv, LLM_PROFILE: 'demo' }).llmModel).toBe('strong-model');
