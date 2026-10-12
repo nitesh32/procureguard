@@ -97,7 +97,7 @@ Three deployables plus a database:
 | `mcp-server` | Exposes the tools. **No permission logic inside.** | Public HTTPS URL; must be long-running because it holds the in-memory store |
 | `agent-service` | Runs the agent loop and the ArmorIQ scope, streams events to the UI, triggers voice on a hold | Long-running process: a hold can wait up to 300 s. Not a short-timeout serverless function. |
 | `dashboard` | Runs scenarios, shows the live feed and data panels | Built static files, served by `agent-service` |
-| store | Sandbox data | In-memory, seeded from `seed/*.json`; `reset` reloads the seed |
+| store | Sandbox data | In-memory, seeded from `seed/shop.json`; `reset` reloads the seed |
 
 **Hosting is decided later.** Locally, `make up` (Docker Compose) starts `mcp-server`, `agent-service` and an `ngrok` container that exposes `/mcp` on a fixed domain, so the URL registered in the ArmorIQ console never changes. `make dev` runs the same services without Docker, with hot reload.
 

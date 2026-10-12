@@ -1,0 +1,7 @@
+{
+  "name": "@procureguard/shared",
+  "private": true,
+  "type": "module",
+  "exports": { "./log": "./src/log.ts" },
+  "scripts": { "typecheck": "tsc -p ." }
+}

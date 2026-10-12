@@ -9,7 +9,7 @@ The stack decided for the Guarded Procurement Agent. The blueprint is in [docs/B
 | MCP tool loading | `@langchain/mcp-adapters` | Tools are loaded from the server, never hand-written |
 | LLM | OpenRouter (OpenAI-compatible) via `@langchain/openai` | Set by `LLM_MODEL_DEV` and `LLM_MODEL_DEMO`. Swappable so we can find a model that reproduces scene 3. |
 | MCP server | `@modelcontextprotocol/sdk` (Streamable HTTP) on Hono | `/mcp` and `GET /health`. Stateless tools; no permission logic. |
-| Data store | In-memory store seeded from `seed/*.json` | `POST /reset` reloads the seed. Needs one long-running process (no serverless). |
+| Data store | In-memory store seeded from `seed/shop.json` | `POST /reset` reloads the seed. Needs one long-running process (no serverless). |
 | Agent API | Hono + Server-Sent Events | `POST /runs`, `GET /runs/:id/events`, `POST /approvals/:id`, `POST /reset` |
 | Dashboard | Vite + React + Tailwind CSS | The build is served by the agent service |
 | Voice | `@elevenlabs/react` in-browser conversation with a client tool | Bonus feature: the first thing cut if time is short |

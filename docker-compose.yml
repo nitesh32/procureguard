@@ -1,0 +1,13 @@
+services:
+  mcp-server:
+    build: { context: ., dockerfile: mcp-server/Dockerfile }
+    env_file: [{ path: .env, required: false }]
+    environment: { MCP_PORT: "8788" }
+    ports: ["8788:8788"]
+
+  # Public HTTPS URL for ArmorIQ. Needs NGROK_AUTHTOKEN and NGROK_DOMAIN in .env.
+  ngrok:
+    image: ngrok/ngrok:3
+    command: ["http", "--url=${NGROK_DOMAIN}", "mcp-server:8788"]
+    environment: { NGROK_AUTHTOKEN: "${NGROK_AUTHTOKEN}" }
+    depends_on: [mcp-server]
