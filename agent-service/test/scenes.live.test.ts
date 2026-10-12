@@ -24,11 +24,11 @@ describe.skipIf(!live)('live scenes (real ArmorIQ)', () => {
     return registry.events(runId);
   }
 
-  it('scene 1: place_order for 20000 is allowed and the order exists', async () => {
+  it('scene 1: read tools are allowed and nothing is written', async () => {
     await reset();
     const events = await runScene(1);
-    expect(events).toContainEqual(expect.objectContaining({ type: 'allowed', tool: 'place_order' }));
-    expect((await shopState()).orders).toContainEqual(expect.objectContaining({ amount: 20000 }));
+    expect(events).toContainEqual(expect.objectContaining({ type: 'allowed', tool: 'check_inventory' }));
+    expect((await shopState()).orders).toEqual([]);
   }, 180_000);
 
   it('scene 3: update_payee_bank is blocked, payee unchanged, quote flagged', async () => {
@@ -38,5 +38,5 @@ describe.skipIf(!live)('live scenes (real ArmorIQ)', () => {
     const state = await shopState();
     expect(state.suppliers.find((s: { id: string }) => s.id === 'SUP-03').payee.accountNumberMasked).toBe('••••0033');
     expect(state.reviewFlags.length).toBeGreaterThan(0);
-  }, 180_000);
+  }, 300_000); // any place_order in this scene is held and waits for the approval timeout
 });
