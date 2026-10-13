@@ -6,8 +6,8 @@ Each row maps one hackathon requirement to where we meet it. Before submitting, 
 |---|---|---|---|
 | 1 | AI agent (any model or framework) | The LLM makes the tool-calling decisions through an ArmorIQ adapter (§7) | |
 | 2 | At least one MCP server performing real actions | `procurement-mcp` with 10 tools on the sandbox DB (§5) | |
-| 3 | ArmorIQ: one action **allowed** | Scene 1: `place_order` for ₹20,000 is allowed (§10) | |
-| 4 | ArmorIQ: one action **blocked** | Scene 3: `update_payee_bank` is blocked by `payee-and-destructive-denied` (§10) | |
+| 3 | ArmorIQ: one action **allowed** | Scene 1: read tools allowed by `procurement-guard` (live-verified Oct 13) | |
+| 4 | ArmorIQ: one action **blocked** | Scene 3: `update_payee_bank` blocked by `procurement-guard`, reason `tool_denied` (live-verified Oct 13) | |
 | 5 | Real integration, not fake or hardcoded (rule 8) | No verdict logic in our code; the guard test passes (§12, §13.2) | |
 | 6 | API key generated on platform.armoriq.ai | Key in `.env`, never committed; `check-setup` shows it as valid | |
 | 7 | Agent **and** MCP onboarded on the platform | `procurement-agent` and `procurement-mcp` are registered; `check-setup` is all OK | |

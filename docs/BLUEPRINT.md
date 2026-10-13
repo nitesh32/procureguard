@@ -193,6 +193,8 @@ Also expose `GET /health` for warm-up and the setup check.
 
 ## 6. ArmorIQ console configuration (document every step in `docs/ARMORIQ_SETUP.md`)
 
+> **Superseded on Oct 13.** The console couldn't keep amount limits or per-person scope, so the build uses **one policy, `procurement-guard`** (reads and notes allow, `place_order` hold, payee and destructive tools block). See `docs/DECISIONS.md` (2026-10-13) and `docs/ARMORIQ_SETUP.md` §4–5. The original plan is kept below for reference.
+
 1. Create an org and generate an API key (`ak_test_…` or `ak_live_…`).
 2. Register the MCP server as **`procurement-mcp`**, using the public URL ending in `/mcp`.
 3. Register the agent as **`procurement-agent`**.
@@ -246,7 +248,7 @@ Cover **every** tool that can move money or change payees. If a sibling tool is 
   - **Quote Reader**: `allowedActions` = the four read tools. It reads untrusted supplier documents.
   - **Buyer**: `allowedActions` = `place_order` only, still under the user's limit.
 - In scene 3 the poisoned quote hijacks the Quote Reader. Its `update_payee_bank` attempt is refused because that authority was **never delegated**.
-- Keep the `payee-and-destructive-denied` policy anyway, so the single-agent fallback still blocks.
+- Keep the block rules in `procurement-guard` anyway, so the single-agent fallback still blocks.
 - If delegation isn't working by Oct 15, ship the single-agent version and leave it out of the README.
 
 **`scripts/check-setup`** prints OK or FAIL for each of: MCP reachable with 10 tools; API key valid; agent name registered; MCP name registered; at least one policy exists. It is read-only.
@@ -286,6 +288,8 @@ Cover **every** tool that can move money or change payees. If a sibling tool is 
 - States: loading, empty, API-down banner, run-in-progress. No layout shift while events stream.
 
 ## 10. The three scenes (acceptance criteria)
+
+> **Superseded on Oct 13.** The shipped scenes are: 1 = check low stock (**allowed**), 2 = restock brake pads (`place_order` **held**), 3 = Apex quote (`update_payee_bank` **blocked**). All run as the manager. Live results are in `docs/DECISIONS.md`.
 
 | # | User | Prompt | Must happen | Verify in DB |
 |---|---|---|---|---|
@@ -404,7 +408,7 @@ ELEVENLABS_AGENT_ID=
   - **disclosure:** AI coding assistants (Claude Code), templates, adapted ArmorIQ cookbook code, and any code written before Oct 10
 - [ ] `docs/ARMORIQ_SETUP.md` with console steps and screenshots
 - [ ] Proof of the block, saved in `docs/screenshots/` and linked from the README: a screenshot or trace from the ArmorIQ console's observability or audit log showing ArmorIQ **blocking** `update_payee_bank`. It must show:
-  - the matched policy `payee-and-destructive-denied`
+  - the matched policy `procurement-guard` (rule: block `update_payee_bank`)
   - the intent/plan
   - the agent name `procurement-agent`
 - [ ] Demo video, 90 seconds or less (script below)
