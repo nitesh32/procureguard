@@ -1,3 +1,4 @@
+import { Ban, Check, CirclePause, ShieldCheck, type LucideIcon } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { rupees, type summarize } from '../feed';
 
@@ -5,24 +6,26 @@ type CountersProps = { summary: ReturnType<typeof summarize> };
 
 export function Counters({ summary }: CountersProps) {
   return (
-    <footer className="grid grid-cols-4 gap-3 px-6 pb-4">
-      <Counter label="Allowed" icon="✓" value={summary.allowed} tone="text-allowed" />
-      <Counter label="Held for approval" icon="⏸" value={summary.held} tone="text-held" />
-      <Counter label="Blocked" icon="⛔" value={summary.blocked} tone="text-blocked" />
-      <Counter label="₹ protected" icon="🛡" value={summary.protectedAmount} tone="text-ink" format={rupees} />
-    </footer>
+    <section aria-label="Totals" className="grid grid-cols-2 gap-2.5">
+      <Tile label="Allowed" Icon={Check} value={summary.allowed} tone="text-allowed" />
+      <Tile label="Held for approval" Icon={CirclePause} value={summary.held} tone="text-held" />
+      <Tile label="Blocked" Icon={Ban} value={summary.blocked} tone="text-blocked" />
+      <Tile label="Money protected" Icon={ShieldCheck} value={summary.protectedAmount} tone="text-brand" format={rupees} />
+    </section>
   );
 }
 
-function Counter({ label, icon, value, tone, format = String }: { label: string; icon: string; value: number; tone: string; format?: (n: number) => string }) {
+type TileProps = { label: string; Icon: LucideIcon; value: number; tone: string; format?: (n: number) => string };
+
+function Tile({ label, Icon, value, tone, format = String }: TileProps) {
   const shown = useCountUp(value);
   return (
-    <div className="flex items-baseline justify-between rounded-xl border border-line bg-panel px-4 py-2.5">
-      <span className="text-sm text-muted">
-        <span aria-hidden className="mr-1.5">{icon}</span>
+    <div className="rounded-2xl border border-line bg-panel px-4 py-3 shadow-sm">
+      <p className="flex items-center gap-1.5 text-xs font-medium text-muted">
+        <Icon className={`h-3.5 w-3.5 ${tone}`} aria-hidden />
         {label}
-      </span>
-      <span className={`font-mono text-2xl font-bold tabular-nums ${tone}`}>{format(shown)}</span>
+      </p>
+      <p className={`mt-1 text-2xl font-semibold tabular-nums ${tone}`}>{format(shown)}</p>
     </div>
   );
 }

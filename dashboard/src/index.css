@@ -1,19 +1,20 @@
 @import 'tailwindcss';
 
-/* One colour per verdict, used everywhere. Fonts are bundled (works offline). */
+/* Light theme. One colour per verdict, used everywhere. Fonts are bundled (works offline). */
 @theme {
   --font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
   --font-mono: 'JetBrains Mono Variable', ui-monospace, Menlo, monospace;
-  --color-ground: #0b0d10;
-  --color-panel: #12161b;
-  --color-panel-2: #181d24;
-  --color-line: #232a33;
-  --color-ink: #e8ecf1;
-  --color-muted: #8b95a3;
-  --color-allowed: #22c55e;
-  --color-held: #f59e0b;
-  --color-blocked: #ef4444;
-  --color-checking: #8fa3b8;
+  --color-ground: #f6f7f9;
+  --color-panel: #ffffff;
+  --color-panel-2: #f1f3f6;
+  --color-line: #e4e7ec;
+  --color-ink: #0f172a;
+  --color-muted: #64748b;
+  --color-brand: #4f46e5;
+  --color-allowed: #16a34a;
+  --color-held: #d97706;
+  --color-blocked: #dc2626;
+  --color-checking: #64748b;
 }
 
 html,
@@ -28,36 +29,26 @@ body {
 
 @keyframes pulse-dot {
   0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.45; transform: scale(0.85); }
+  50% { opacity: 0.4; transform: scale(0.8); }
 }
-@keyframes scan {
-  to { transform: rotate(360deg); }
+@keyframes flash-red {
+  0% { background-color: color-mix(in srgb, var(--color-blocked) 22%, transparent); }
+  100% { background-color: color-mix(in srgb, var(--color-blocked) 6%, transparent); }
 }
-@keyframes ring-pulse {
-  0%, 100% { opacity: 0.9; }
-  50% { opacity: 0.35; }
+@keyframes slide-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 @keyframes shake {
   0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-6px); }
-  75% { transform: translateX(6px); }
-}
-@keyframes flash-red {
-  0% { background-color: color-mix(in srgb, var(--color-blocked) 35%, transparent); }
-  100% { background-color: color-mix(in srgb, var(--color-blocked) 10%, transparent); }
-}
-@keyframes slide-in {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
 }
 
-.animate-pulse-dot { animation: pulse-dot 2s ease-in-out infinite; }
-.animate-scan { animation: scan 1.1s linear infinite; transform-origin: center; transform-box: fill-box; }
-.animate-ring { animation: ring-pulse 1.4s ease-in-out infinite; }
-.animate-shake { animation: shake 200ms ease-out 2; }
-.animate-flash-red { animation: flash-red 900ms ease-out forwards; }
-.animate-slide-in { animation: slide-in 300ms ease-out both; }
-.packet { transition: left 450ms ease-out, top 250ms ease-out, opacity 300ms ease-out, background-color 200ms ease-out; }
+.animate-pulse-dot { animation: pulse-dot 1.8s ease-in-out infinite; }
+.animate-flash-red { animation: flash-red 1s ease-out forwards; }
+.animate-slide-in { animation: slide-in 250ms ease-out both; }
+.animate-shake { animation: shake 180ms ease-out 2; }
 
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -70,11 +61,11 @@ body {
 
 /* Agent answer rendered from Markdown */
 .answer > * + * { margin-top: 0.6rem; }
-.answer strong { color: var(--color-ink); font-weight: 600; }
+.answer strong { font-weight: 600; }
 .answer ul { list-style: disc; padding-left: 1.25rem; }
 .answer ol { list-style: decimal; padding-left: 1.25rem; }
 .answer h1, .answer h2, .answer h3 { font-weight: 600; font-size: 0.95rem; }
-.answer code { font-family: var(--font-mono); font-size: 0.8rem; color: var(--color-checking); }
+.answer code { font-family: var(--font-mono); font-size: 0.8rem; background: var(--color-panel-2); padding: 0.05rem 0.3rem; border-radius: 4px; }
 .answer table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
 .answer th, .answer td { border: 1px solid var(--color-line); padding: 0.3rem 0.5rem; text-align: left; }
-.answer th { color: var(--color-muted); font-weight: 600; }
+.answer th { background: var(--color-panel-2); color: var(--color-muted); font-weight: 600; }

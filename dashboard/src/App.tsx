@@ -1,16 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { api, type DashboardConfig, type Scenario, type ShopState } from './api';
-import { AgentFlow } from './components/AgentFlow';
-import { AnswerPanel } from './components/AnswerPanel';
+import { Chat } from './components/Chat';
 import { Counters } from './components/Counters';
+import { GateStatus } from './components/GateStatus';
 import { Header } from './components/Header';
 import { HeldCard } from './components/HeldCard';
-import { PromptBar } from './components/PromptBar';
-import { Timeline } from './components/Timeline';
 import { VoiceApproval } from './components/VoiceApproval';
-import { WorldPanel } from './components/WorldPanel';
+import { WorldTabs } from './components/WorldTabs';
 import { describeCall, summarize, toCalls, type Call } from './feed';
-import { useRun } from './useRun';
+import { useRun, type Turn } from './useRun';
 
 // Events after which the shop data may have changed.
 const shopChangingEvents = new Set(['tool_result', 'final']);
@@ -55,13 +53,16 @@ export function App() {
     return () => window.removeEventListener('keydown', onKey);
   }, [resetDemo]);
 
-  const lastEvent = run.events.at(-1);
+  const lastEvent = run.current?.events.at(-1);
   useEffect(() => {
     if (lastEvent && shopChangingEvents.has(lastEvent.type)) void refreshShop().catch(() => setApiDown(true));
   }, [lastEvent, refreshShop]);
 
-  const calls = useMemo(() => toCalls(run.events), [run.events]);
-  const summary = summarize(calls);
+  // Totals and world effects cover the whole conversation; the gate shows the newest action.
+  const allCalls = useMemo(() => run.turns.flatMap((turn) => toCalls(turn.events)), [run.turns]);
+  const currentCalls = useMemo(() => (run.current ? toCalls(run.current.events) : []), [run.current]);
+  const latest = currentCalls.at(-1);
+
   const names = useMemo(
     () => ({
       suppliers: Object.fromEntries((shop?.suppliers ?? []).map((s) => [s.id, s.name])),
@@ -72,65 +73,49 @@ export function App() {
   const describe = (call: Call) => describeCall(call, names);
 
   // ArmorIQ is always on; the demo runs as the configured manager.
-  const runPrompt = (prompt: string) => config && run.start({ prompt, userEmail: config.users.manager, armoriqEnabled: true });
+  const ask = (prompt: string) => config && run.start({ prompt, userEmail: config.users.manager, armoriqEnabled: true });
 
-  const blocked = calls.find((call) => call.verdict === 'blocked');
-  const held = calls.find((call) => call.verdict === 'held');
+  const renderHeld = (call: Call, turn: Turn) =>
+    config && (
+      <HeldCard
+        call={call}
+        itemName={names.items[String(call.args.sku)]}
+        consoleUrl={config.armoriqConsoleUrl}
+        voice={
+          config.elevenLabsAgentId &&
+          turn.runId && (
+            <VoiceApproval
+              agentId={config.elevenLabsAgentId}
+              runId={turn.runId}
+              requestedBy="the shop manager"
+              amount={Number(call.args.amount)}
+              quoteId={String(call.args.quoteId ?? '')}
+              reason={call.reason}
+            />
+          )
+        }
+      />
+    );
 
   return (
-    <div className="grid h-full grid-rows-[auto_auto_minmax(0,1fr)_auto]">
+    <div className="flex h-full flex-col">
       <Header />
-      <div>
-        {apiDown && (
-          <div className="mx-6 flex items-center gap-3 rounded-lg bg-blocked/15 px-4 py-2 text-sm text-blocked">
-            The agent service is not reachable. Start it with <code className="font-mono">make up</code>.
-            <button type="button" onClick={() => void load()} className="rounded bg-blocked/20 px-2 py-0.5">
-              Retry
-            </button>
-          </div>
-        )}
-        <PromptBar scenarios={scenarios} disabled={run.running || !config} onRun={runPrompt} />
-      </div>
-
-      <main className="grid min-h-0 grid-cols-[minmax(0,3fr)_minmax(0,2fr)] gap-4 px-6 pb-4">
-        <div className="grid min-h-0 grid-rows-[15rem_minmax(0,1fr)_11rem] gap-3">
-          <AgentFlow
-            calls={calls}
-            idle={!run.request}
-            attackBanner={blocked && `Attack stopped: the agent ${lowerFirst(describe(blocked))}. ArmorIQ blocked it before it ran.`}
-            heldCard={
-              held &&
-              config && (
-                <HeldCard
-                  call={held}
-                  itemName={names.items[String(held.args.sku)]}
-                  consoleUrl={config.armoriqConsoleUrl}
-                  voice={
-                    config.elevenLabsAgentId &&
-                    run.runId && (
-                      <VoiceApproval
-                        agentId={config.elevenLabsAgentId}
-                        runId={run.runId}
-                        requestedBy="the shop manager"
-                        amount={Number(held.args.amount)}
-                        quoteId={String(held.args.quoteId ?? '')}
-                        reason={held.reason}
-                      />
-                    )
-                  }
-                />
-              )
-            }
-          />
-          <Timeline calls={calls} describe={describe} />
-          <AnswerPanel events={run.events} running={run.running} startError={run.startError} summary={summary} />
+      {apiDown && (
+        <div className="flex items-center gap-3 border-b border-blocked/20 bg-blocked/5 px-6 py-2 text-sm text-blocked">
+          The agent service is not reachable. Start it with <code className="font-mono">make up</code>.
+          <button type="button" onClick={() => void load()} className="rounded-md border border-blocked/30 px-2 py-0.5">
+            Retry
+          </button>
         </div>
-        <WorldPanel shop={shop} calls={calls} />
+      )}
+      <main className="mx-auto grid min-h-0 w-full max-w-[1600px] flex-1 grid-cols-[minmax(0,62fr)_minmax(0,38fr)] gap-4 p-4">
+        <Chat turns={run.turns} scenarios={scenarios} disabled={run.running || !config} onAsk={ask} describe={describe} renderHeld={renderHeld} />
+        <aside className="flex min-h-0 flex-col gap-3">
+          <GateStatus latest={latest} sentence={latest && describe(latest)} />
+          <Counters summary={summarize(allCalls)} />
+          <WorldTabs shop={shop} calls={allCalls} />
+        </aside>
       </main>
-
-      <Counters summary={summary} />
     </div>
   );
 }
-
-const lowerFirst = (text: string) => text.charAt(0).toLowerCase() + text.slice(1);

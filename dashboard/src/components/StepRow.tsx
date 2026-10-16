@@ -1,0 +1,45 @@
+import { ChevronRight } from 'lucide-react';
+import { useState } from 'react';
+import type { Call } from '../feed';
+import { VerdictPill } from './VerdictPill';
+
+const reasonText: Record<string, string> = {
+  tool_denied: 'ArmorIQ policy blocks this tool',
+  rule_action_hold: 'ArmorIQ policy holds this tool for human approval',
+  no_matching_policy: 'No ArmorIQ policy covers this tool (fails closed)',
+};
+
+const decidedBy = (call: Call) =>
+  call.reason ? (reasonText[call.reason] ?? call.reason) : call.verdict === 'allowed' ? 'ArmorIQ policy allows this tool' : 'No decision yet';
+
+// One tool call inside the chat: plain sentence first, raw details on demand.
+export function StepRow({ call, sentence }: { call: Call; sentence: string }) {
+  const [open, setOpen] = useState(false);
+  const blocked = call.verdict === 'blocked';
+
+  return (
+    <li className={`animate-slide-in rounded-lg ${blocked ? 'animate-shake bg-blocked/5 ring-1 ring-blocked/30' : ''}`}>
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={() => setOpen(!open)}
+        className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left hover:bg-panel-2 focus-visible:bg-panel-2 focus-visible:outline-none"
+      >
+        <ChevronRight aria-hidden className={`h-3.5 w-3.5 shrink-0 text-muted transition-transform ${open ? 'rotate-90' : ''}`} />
+        <span className={`min-w-0 flex-1 truncate text-sm ${blocked ? 'font-medium text-blocked' : ''}`}>{sentence}</span>
+        <code className="hidden shrink-0 font-mono text-[11px] text-muted xl:inline">{call.tool}</code>
+        <VerdictPill verdict={call.verdict} />
+      </button>
+      {open && (
+        <div className="space-y-1.5 px-8 pb-2 text-xs">
+          <p className="text-muted">
+            Decided by <span className="text-ink">{decidedBy(call)}</span>
+            {call.reason && <span className="ml-1.5 font-mono">({call.reason})</span>}
+            <span className="ml-2">· {new Date(call.startedAt).toLocaleTimeString('en-GB')}</span>
+          </p>
+          <pre className="overflow-x-auto rounded-md bg-panel-2 p-2 font-mono text-[11px] text-muted">{JSON.stringify(call.args, null, 2)}</pre>
+        </div>
+      )}
+    </li>
+  );
+}

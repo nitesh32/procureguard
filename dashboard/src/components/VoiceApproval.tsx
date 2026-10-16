@@ -59,18 +59,18 @@ function VoiceCall({ agentId, runId, requestedBy, amount, quoteId, reason }: Voi
   return (
     <div className="mt-3 flex flex-wrap items-center gap-3 text-sm">
       {inCall ? (
-        <button type="button" onClick={conversation.endSession} className="rounded bg-red-700 px-3 py-1.5 text-white">
+        <button type="button" onClick={conversation.endSession} className="rounded-lg bg-blocked px-3 py-1.5 text-white">
           End call
         </button>
       ) : (
-        <button type="button" onClick={() => void callOwner()} className="rounded bg-amber-600 px-3 py-1.5 font-medium text-white">
+        <button type="button" onClick={() => void callOwner()} className="rounded-lg border border-held/40 bg-panel px-3 py-1.5 font-medium text-held">
           🎙 Ask the owner by voice
         </button>
       )}
-      <span className="text-xs text-stone-600">
+      <span className="text-xs text-muted">
         {conversation.status === 'connected' ? (conversation.isSpeaking ? 'Agent speaking…' : 'Listening…') : conversation.status}
       </span>
-      {error && <span className="text-xs text-red-700">{error} · use the console link instead.</span>}
+      {error && <span className="text-xs text-blocked">{error} · use the console link instead.</span>}
     </div>
   );
 }

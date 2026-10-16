@@ -1,23 +1,24 @@
+import { Ban, Check, CircleMinus, CirclePause, Loader2, TriangleAlert, X, type LucideIcon } from 'lucide-react';
 import type { Verdict } from '../feed';
 
 // Colour is never the only signal: every verdict has an icon and a word.
-export const verdictLook: Record<Verdict, { icon: string; label: string; text: string; bg: string }> = {
-  checking: { icon: '◌', label: 'checking', text: 'text-checking', bg: 'bg-checking/15' },
-  allowed: { icon: '✓', label: 'allowed', text: 'text-allowed', bg: 'bg-allowed/15' },
-  approved: { icon: '✓', label: 'approved', text: 'text-allowed', bg: 'bg-allowed/15' },
-  held: { icon: '⏸', label: 'held', text: 'text-held', bg: 'bg-held/15' },
-  blocked: { icon: '⛔', label: 'blocked', text: 'text-blocked', bg: 'bg-blocked/15' },
-  rejected: { icon: '✕', label: 'not approved', text: 'text-blocked', bg: 'bg-blocked/10' },
-  failed: { icon: '!', label: 'tool error', text: 'text-muted', bg: 'bg-muted/15' },
-  'no-verdict': { icon: '–', label: 'no verdict received', text: 'text-muted', bg: 'bg-muted/10' },
+export const verdictLook: Record<Verdict, { Icon: LucideIcon; label: string; text: string; bg: string; spin?: boolean }> = {
+  checking: { Icon: Loader2, label: 'checking', text: 'text-checking', bg: 'bg-panel-2', spin: true },
+  allowed: { Icon: Check, label: 'allowed', text: 'text-allowed', bg: 'bg-allowed/10' },
+  approved: { Icon: Check, label: 'approved', text: 'text-allowed', bg: 'bg-allowed/10' },
+  held: { Icon: CirclePause, label: 'held', text: 'text-held', bg: 'bg-held/10' },
+  blocked: { Icon: Ban, label: 'blocked', text: 'text-blocked', bg: 'bg-blocked/10' },
+  rejected: { Icon: X, label: 'not approved', text: 'text-blocked', bg: 'bg-blocked/10' },
+  failed: { Icon: TriangleAlert, label: 'tool error', text: 'text-muted', bg: 'bg-panel-2' },
+  'no-verdict': { Icon: CircleMinus, label: 'no verdict', text: 'text-muted', bg: 'bg-panel-2' },
 };
 
 export function VerdictPill({ verdict }: { verdict: Verdict }) {
-  const look = verdictLook[verdict];
+  const { Icon, label, text, bg, spin } = verdictLook[verdict];
   return (
-    <span className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold ${look.text} ${look.bg}`}>
-      <span aria-hidden>{look.icon}</span>
-      {look.label}
+    <span className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${text} ${bg}`}>
+      <Icon aria-hidden className={`h-3.5 w-3.5 ${spin ? 'animate-spin' : ''}`} />
+      {label}
     </span>
   );
 }
