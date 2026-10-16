@@ -1,10 +1,12 @@
-import { ArrowUp, Bot, ChevronRight, CornerDownLeft, ShieldAlert, ShieldCheck, ShoppingCart, Sparkles, TriangleAlert } from 'lucide-react';
+import { ArrowUp, ChevronRight, CornerDownLeft, ShieldAlert, ShieldCheck, ShoppingCart, TriangleAlert } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import type { Scenario } from '../api';
 import { summarize, toCalls, type Call } from '../feed';
 import type { Turn } from '../useRun';
+import { AgentAvatar } from './AgentAvatar';
+import { ArmorIQMark } from './ArmorIQMark';
 import { StepRow } from './StepRow';
 
 // What each suggested scenario demonstrates, shown on the welcome screen.
@@ -103,10 +105,9 @@ export function Chat({ turns, scenarios, disabled, onAsk, describe, renderHeld }
 function Welcome({ scenarios, disabled, onPick }: { scenarios: Scenario[]; disabled: boolean; onPick: (prompt: string) => void }) {
   return (
     <div className="mx-auto flex h-full max-w-xl flex-col items-center justify-center text-center">
-      <span className="grid h-12 w-12 place-items-center rounded-2xl bg-brand/10 text-brand">
-        <Sparkles className="h-6 w-6" aria-hidden />
-      </span>
-      <h2 className="mt-4 text-xl font-semibold">Ask the agent to buy something</h2>
+      <AgentAvatar size="lg" />
+      <p className="mt-3 text-xs font-medium tracking-wider text-muted uppercase">Procurement agent</p>
+      <h2 className="mt-1 text-xl font-semibold">Ask the agent to buy something</h2>
       <p className="mt-1 text-sm text-muted">It works on its own. ArmorIQ checks every action before it runs, and holds or blocks the risky ones.</p>
       <div className="mt-6 grid w-full gap-2.5">
         {scenarios.map((scenario) => {
@@ -171,10 +172,14 @@ function TurnView({ turn, describe, renderHeld }: { turn: Turn; describe: (call:
       </div>
 
       <div className="flex gap-3">
-        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-panel-2 text-muted">
-          <Bot className="h-4 w-4" aria-hidden />
-        </span>
+        <AgentAvatar working={!done} />
         <div className="min-w-0 flex-1 space-y-3">
+          <p className="flex items-center gap-2 text-sm">
+            <span className="font-semibold">Procurement agent</span>
+            <span className="flex items-center gap-1 text-xs text-muted">
+              · guarded by <ArmorIQMark className="h-3.5 w-3.5" /> ArmorIQ
+            </span>
+          </p>
           <ActionTrace
             calls={calls}
             done={done}
@@ -199,8 +204,14 @@ function TurnView({ turn, describe, renderHeld }: { turn: Turn; describe: (call:
           {failure && <p className="text-sm text-blocked">Run failed: {String(failure.error)}</p>}
           {final && (
             <div className="answer animate-slide-in text-sm leading-relaxed">
-              {/* react-markdown never renders raw HTML: answers can echo attacker-controlled quote text. */}
-              <Markdown remarkPlugins={[remarkGfm]}>{String(final.answer ?? '')}</Markdown>
+              {String(final.answer ?? '').trim() ? (
+                // react-markdown never renders raw HTML: answers can echo attacker-controlled quote text.
+                <Markdown remarkPlugins={[remarkGfm]}>{String(final.answer)}</Markdown>
+              ) : (
+                <p className="text-muted">
+                  The agent finished without writing a summary. Its {summary.total} actions and ArmorIQ’s decisions are listed above.
+                </p>
+              )}
             </div>
           )}
         </div>

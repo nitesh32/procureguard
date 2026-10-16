@@ -69,7 +69,7 @@ async function runAgent({ config, armoriq, log }: AgentDeps, request: RunRequest
         apiKey: config.LLM_API_KEY,
         configuration: { baseURL: config.LLM_BASE_URL },
         temperature: 0,
-        maxTokens: 4096, // DeepSeek flash reasons before acting; 1024 ran out mid-thought (finishReason=length)
+        maxTokens: 8192, // DeepSeek flash spends tokens reasoning; 4096 still ran out before the answer (finishReason=length)
         maxRetries: 3, // backoff on 429/5xx; refused tool calls are never retried
       }),
       tools,

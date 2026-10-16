@@ -1,4 +1,6 @@
-import { Bot, ChevronRight, Shield, Wrench } from 'lucide-react';
+import { Bot, ChevronRight, Wrench } from 'lucide-react';
+import type { ComponentType } from 'react';
+import { ArmorIQMark } from './ArmorIQMark';
 import type { Call } from '../feed';
 import { verdictLook } from './VerdictPill';
 
@@ -10,12 +12,14 @@ export function GateStatus({ latest, sentence }: { latest?: Call; sentence?: str
 
   return (
     <section aria-label="ArmorIQ gate" aria-live="polite" className="rounded-2xl border border-line bg-panel p-4 shadow-sm">
-      <h2 className="text-xs font-semibold tracking-wider text-muted uppercase">Live · ArmorIQ gate</h2>
+      <h2 className="flex items-center gap-1.5 text-xs font-semibold tracking-wider text-muted uppercase">
+        <ArmorIQMark className="h-3.5 w-3.5" /> Live · ArmorIQ gate
+      </h2>
       <div className="mt-3 flex items-center justify-between gap-1">
         <Stage Icon={Bot} label="Agent" active={!!latest} />
         <ChevronRight className="h-4 w-4 text-line" aria-hidden />
         <Stage
-          Icon={look?.Icon ?? Shield}
+          Icon={look?.Icon ?? ArmorIQIcon}
           label={look?.label ?? 'ArmorIQ'}
           active={!!latest}
           tone={look?.text}
@@ -38,7 +42,9 @@ export function GateStatus({ latest, sentence }: { latest?: Call; sentence?: str
   );
 }
 
-type StageProps = { Icon: typeof Bot; label: string; active: boolean; tone?: string; spin?: boolean; emphasise?: boolean };
+const ArmorIQIcon = ({ className }: { className?: string }) => <ArmorIQMark className={className} />;
+
+type StageProps = { Icon: ComponentType<{ className?: string }>; label: string; active: boolean; tone?: string; spin?: boolean; emphasise?: boolean };
 
 function Stage({ Icon, label, active, tone, spin, emphasise }: StageProps) {
   return (
