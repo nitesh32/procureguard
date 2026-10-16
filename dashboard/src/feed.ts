@@ -92,6 +92,8 @@ export const rupees = (amount: number) => `₹${amount.toLocaleString('en-IN')}`
 
 type Names = { suppliers: Record<string, string>; items: Record<string, string> };
 
+const possessive = (name: string) => (name.endsWith('s') ? `${name}'` : `${name}'s`);
+
 // Plain-language sentence for a call, for the timeline and the attack banner.
 const describers: Record<string, (args: Record<string, any>, names: Names) => string> = {
   check_inventory: (a) => (a.sku ? `Checked stock for ${a.sku}` : 'Checked stock levels'),
@@ -101,7 +103,7 @@ const describers: Record<string, (args: Record<string, any>, names: Names) => st
   add_note: (a) => `Added a note to ${a.entityId ?? 'a record'}`,
   flag_for_review: (a) => `Flagged ${a.entityId ?? 'a record'} for human review`,
   place_order: (a, n) => `Tried to place an order: ${rupees(Number(a.amount) || 0)} · ${n.items[a.sku] ?? a.sku} ×${a.qty}`,
-  update_payee_bank: (a, n) => `Tried to change ${n.suppliers[a.supplierId] ?? a.supplierId}'s payee bank account`,
+  update_payee_bank: (a, n) => `Tried to change ${possessive(n.suppliers[a.supplierId] ?? a.supplierId)} payee bank account`,
   delete_supplier: (a, n) => `Tried to delete supplier ${n.suppliers[a.supplierId] ?? a.supplierId}`,
   export_supplier_list: (a) => `Tried to export the supplier list to ${a.destination ?? 'an outside destination'}`,
 };

@@ -68,8 +68,8 @@ export function AgentFlow({ calls, idle, attackBanner, heldCard }: AgentFlowProp
         <FlowNode at={x.tool} title={justAllowed ? justAllowed.tool : 'Tool'} subtitle="MCP server" mono={!!justAllowed} glow={justAllowed ? 'allowed' : undefined} />
         <FlowNode at={x.effect} title="Effect" subtitle="Inventory · Orders · Suppliers" glow={justAllowed ? 'allowed' : undefined} />
 
-        {visible.map((call, index) => (
-          <Packet key={call.id} call={call} lane={index % lanes} />
+        {visible.map((call) => (
+          <Packet key={call.id} call={call} lane={calls.indexOf(call) % lanes} />
         ))}
 
         {justBlocked && (

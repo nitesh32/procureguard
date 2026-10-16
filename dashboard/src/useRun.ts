@@ -30,8 +30,17 @@ export function useRun() {
     }
   }, []);
 
+  /** Back to the idle screen (used by the hidden presenter reset). */
+  const clear = useCallback(() => {
+    stream.current?.close();
+    setRunId(null);
+    setRequest(null);
+    setEvents([]);
+    setStartError(null);
+  }, []);
+
   useEffect(() => () => stream.current?.close(), []);
 
   const running = runId !== null && startError === null && !events.some(isEndOfRun);
-  return { runId, request, events, running, startError, start };
+  return { runId, request, events, running, startError, start, clear };
 }

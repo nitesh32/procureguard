@@ -23,7 +23,11 @@ export function App() {
   const run = useRun();
 
   const refreshShop = useCallback(() => api.shopState().then(setShop), []);
-  const resetShop = useCallback(() => api.resetShop().then(setShop).catch(() => setApiDown(true)), []);
+  const { clear } = run;
+  const resetDemo = useCallback(() => {
+    clear();
+    return api.resetShop().then(setShop).catch(() => setApiDown(true));
+  }, [clear]);
 
   const load = useCallback(async () => {
     try {
@@ -41,15 +45,15 @@ export function App() {
   // Hidden reset for the presenter: Shift+R, or open the page with ?reset.
   useEffect(() => {
     if (new URLSearchParams(window.location.search).has('reset')) {
-      void resetShop();
+      void resetDemo();
       window.history.replaceState(null, '', window.location.pathname);
     }
     const onKey = (event: KeyboardEvent) => {
-      if (event.shiftKey && event.key === 'R' && !(event.target instanceof HTMLInputElement)) void resetShop();
+      if (event.shiftKey && event.key === 'R' && !(event.target instanceof HTMLInputElement)) void resetDemo();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [resetShop]);
+  }, [resetDemo]);
 
   const lastEvent = run.events.at(-1);
   useEffect(() => {

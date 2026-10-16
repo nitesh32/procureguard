@@ -55,6 +55,6 @@ describe('summarize', () => {
 describe('describeCall', () => {
   it('turns a call into a plain-language sentence', () => {
     const [call] = toCalls([event('call', { callId: 'a', tool: 'update_payee_bank', args: { supplierId: 'SUP-03' } })]);
-    expect(describeCall(call, names)).toBe("Tried to change Apex Components's payee bank account");
+    expect(describeCall(call, names)).toBe("Tried to change Apex Components' payee bank account");
   });
 });
