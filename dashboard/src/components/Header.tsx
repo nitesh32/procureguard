@@ -1,6 +1,5 @@
 import { ShieldCheck } from 'lucide-react';
 import armoriqWordmark from '../assets/armoriq-wordmark.svg';
-import { ArmorIQMark } from './ArmorIQMark';
 
 export function Header() {
   return (
@@ -17,10 +16,8 @@ export function Header() {
         <span className="flex items-center gap-2.5 rounded-full border border-line bg-panel py-1.5 pr-3.5 pl-2.5 text-sm font-medium shadow-sm">
           <span aria-hidden className="h-2 w-2 animate-pulse-dot rounded-full bg-allowed" />
           <span className="text-allowed">Protected by</span>
-          <ArmorIQMark className="h-4 w-4" />
-          <img src={armoriqWordmark} alt="ArmorIQ" className="h-3" />
+          <img src={armoriqWordmark} alt="ArmorIQ" className="h-3.5" />
         </span>
-        <span className="rounded border border-line px-1.5 py-0.5 text-[10px] font-medium tracking-wider text-muted">SANDBOX</span>
       </div>
     </header>
   );
