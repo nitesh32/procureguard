@@ -2,8 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { api, type DashboardConfig, type Scenario, type ShopState } from './api';
 import { BlockedCard } from './components/BlockedCard';
 import { Chat } from './components/Chat';
-import { Counters } from './components/Counters';
-import { GateStatus } from './components/GateStatus';
+import { Decisions } from './components/Decisions';
 import { Header } from './components/Header';
 import { HeldCard } from './components/HeldCard';
 import { VoiceApproval } from './components/VoiceApproval';
@@ -59,7 +58,7 @@ export function App() {
     if (lastEvent && shopChangingEvents.has(lastEvent.type)) void refreshShop().catch(() => setApiDown(true));
   }, [lastEvent, refreshShop]);
 
-  // Totals and world effects cover the whole conversation; the gate shows the newest action.
+  // Totals and world effects cover the whole conversation; the rail shows the newest decision.
   const allCalls = useMemo(() => run.turns.flatMap((turn) => toCalls(turn.events)), [run.turns]);
   const currentCalls = useMemo(() => (run.current ? toCalls(run.current.events) : []), [run.current]);
   const latest = currentCalls.at(-1);
@@ -122,18 +121,17 @@ export function App() {
     <div className="flex h-full flex-col">
       <Header />
       {apiDown && (
-        <div className="flex items-center gap-3 border-b border-blocked/20 bg-blocked/5 px-6 py-2 text-sm text-blocked">
-          The agent service is not reachable. Start it with <code className="font-mono">make up</code>.
-          <button type="button" onClick={() => void load()} className="rounded-md border border-blocked/30 px-2 py-0.5">
+        <div role="alert" className="flex flex-wrap items-center gap-3 bg-blocked/5 px-4 py-2 text-sm text-blocked sm:px-6">
+          The agent service is not reachable. Start it with <code className="font-mono">make up</code>, then retry.
+          <button type="button" onClick={() => void load()} className="h-8 rounded-md border border-blocked/30 px-3 font-medium transition-colors hover:bg-blocked/10">
             Retry
           </button>
         </div>
       )}
-      <main className="mx-auto grid min-h-0 w-full max-w-[1600px] flex-1 grid-cols-[minmax(0,62fr)_minmax(0,38fr)] gap-4 p-4">
+      <main className="mx-auto flex min-h-0 w-full max-w-[1600px] flex-1 flex-col overflow-y-auto lg:grid lg:grid-cols-[minmax(0,1fr)_400px] lg:overflow-hidden">
         <Chat turns={run.turns} scenarios={scenarios} disabled={run.running || !config} onAsk={ask} describe={describe} renderCards={renderCards} />
-        <aside className="flex min-h-0 flex-col gap-3">
-          <GateStatus latest={latest} sentence={latest && describe(latest)} />
-          <Counters summary={summarize(allCalls)} />
+        <aside aria-label="ArmorIQ decisions and shop data" className="flex min-h-0 shrink-0 flex-col border-t border-line lg:border-t-0 lg:border-l">
+          <Decisions summary={summarize(allCalls)} latest={latest} />
           <WorldTabs shop={shop} calls={allCalls} />
         </aside>
       </main>

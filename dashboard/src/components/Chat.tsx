@@ -43,7 +43,7 @@ export function Chat({ turns, scenarios, disabled, onAsk, describe, renderCards 
   };
 
   return (
-    <section aria-label="Chat with the purchasing agent" className="flex min-h-0 flex-col">
+    <section aria-label="Chat with the purchasing agent" className="flex min-h-0 shrink-0 flex-col lg:shrink">
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6">
         {turns.length === 0 ? (
           <Welcome scenarios={scenarios} disabled={disabled} onPick={ask} />
