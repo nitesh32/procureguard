@@ -3,7 +3,8 @@ import type { RunEvent } from './api';
 // Turns raw run events into one row per tool call. Verdicts come only from
 // ArmorIQ events (the "allowed" event is emitted when a tool ran under ArmorIQ).
 
-export type Verdict = 'checking' | 'allowed' | 'held' | 'approved' | 'rejected' | 'blocked' | 'failed' | 'no-verdict';
+// 'error' = ArmorIQ's check itself failed (e.g. unreachable). It fails closed, but it is not a policy block.
+export type Verdict = 'checking' | 'allowed' | 'held' | 'approved' | 'rejected' | 'blocked' | 'error' | 'failed' | 'no-verdict';
 
 export type Call = {
   id: string;
@@ -20,7 +21,7 @@ export type Call = {
 const armoriqVerdicts: Record<string, Verdict> = {
   hold: 'held',
   block: 'blocked',
-  error: 'blocked',
+  error: 'error',
   approved: 'approved',
   rejected: 'rejected',
   timeout: 'rejected',
@@ -43,7 +44,7 @@ export function toCalls(events: RunEvent[]): Call[] {
 
     const armoriqVerdict = armoriqVerdicts[event.type];
     if (armoriqVerdict) {
-      const waitingOn: Verdict = armoriqVerdict === 'held' || armoriqVerdict === 'blocked' ? 'checking' : 'held';
+      const waitingOn: Verdict = armoriqVerdict === 'held' || armoriqVerdict === 'blocked' || armoriqVerdict === 'error' ? 'checking' : 'held';
       const call = oldestWaiting(event.tool, waitingOn);
       if (!call) continue;
       call.verdict = armoriqVerdict;
@@ -76,15 +77,11 @@ export function toCalls(events: RunEvent[]): Call[] {
 
 export function summarize(calls: Call[]) {
   const count = (...verdicts: Verdict[]) => calls.filter((call) => verdicts.includes(call.verdict)).length;
-  const protectedAmount = calls
-    .filter((call) => call.verdict === 'blocked' || (call.wasHeld && call.verdict !== 'approved'))
-    .reduce((sum, call) => sum + (Number(call.args.amount) || 0), 0);
   return {
     total: calls.length,
     allowed: count('allowed', 'approved'),
     held: calls.filter((call) => call.wasHeld).length,
     blocked: count('blocked'),
-    protectedAmount,
   };
 }
 

@@ -10,7 +10,7 @@ const reasonText: Record<string, string> = {
 };
 
 const decidedBy = (call: Call) =>
-  call.reason ? (reasonText[call.reason] ?? call.reason) : call.verdict === 'allowed' ? 'ArmorIQ policy allows this tool' : 'No decision yet';
+  call.verdict === 'error' ? `ArmorIQ check failed, so it fails closed: ${call.reason ?? 'no details'}` : call.reason ? (reasonText[call.reason] ?? call.reason) : call.verdict === 'allowed' ? 'ArmorIQ policy allows this tool' : 'No decision yet';
 
 // One tool call inside the chat: plain sentence first, raw details on demand.
 export function StepRow({ step, call, sentence }: { step: number; call: Call; sentence: string }) {

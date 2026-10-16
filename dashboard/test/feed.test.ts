@@ -33,13 +33,23 @@ describe('toCalls', () => {
     expect(toCalls([...held, event('timeout', { tool: 'place_order' })])[0].verdict).toBe('rejected');
   });
 
+  it('keeps a failed ArmorIQ check apart from a policy block', () => {
+    const calls = toCalls([
+      event('call', { callId: 'a', tool: 'get_quote' }),
+      event('error', { tool: 'get_quote', error: 'ArmorIQ unreachable' }),
+      event('tool_error', { callId: 'a', tool: 'get_quote', error: 'enforcement failed' }),
+    ]);
+    expect(calls[0]).toMatchObject({ verdict: 'error', reason: 'ArmorIQ unreachable' });
+    expect(summarize(calls).blocked).toBe(0);
+  });
+
   it('marks calls without a verdict once the run has ended', () => {
     expect(toCalls([event('call', { callId: 'a', tool: 'get_quote' }), event('final', { answer: 'done' })])[0].verdict).toBe('no-verdict');
   });
 });
 
 describe('summarize', () => {
-  it('counts verdicts and sums the money ArmorIQ protected', () => {
+  it('counts ArmorIQ verdicts', () => {
     const calls = toCalls([
       event('call', { callId: 'a', tool: 'check_inventory' }),
       event('allowed', { callId: 'a', tool: 'check_inventory' }),
@@ -48,7 +58,7 @@ describe('summarize', () => {
       event('call', { callId: 'c', tool: 'update_payee_bank', args: {} }),
       event('block', { tool: 'update_payee_bank' }),
     ]);
-    expect(summarize(calls)).toEqual({ total: 3, allowed: 1, held: 1, blocked: 1, protectedAmount: 20000 });
+    expect(summarize(calls)).toEqual({ total: 3, allowed: 1, held: 1, blocked: 1 });
   });
 });
 

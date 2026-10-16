@@ -11,6 +11,7 @@ const outcome: Record<Verdict, string> = {
   held: 'Waiting — held for the owner’s approval',
   rejected: 'Not run — not approved',
   blocked: 'Not run — blocked before it reached the shop',
+  error: 'Not run — the ArmorIQ check failed, so it fails closed',
   failed: 'Allowed, but the tool returned an error',
   'no-verdict': 'No ArmorIQ decision recorded',
 };
