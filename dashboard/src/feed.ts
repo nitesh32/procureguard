@@ -1,64 +1,111 @@
 import type { RunEvent } from './api';
 
-// Turns the raw run events into one row per tool call. Verdicts come only from
-// ArmorIQ events (or, with ArmorIQ off, from the tool simply running).
+// Turns raw run events into one row per tool call. Verdicts come only from
+// ArmorIQ events (the "allowed" event is emitted when a tool ran under ArmorIQ).
 
-export type Verdict = 'pending' | 'allowed' | 'held' | 'approved' | 'rejected' | 'blocked' | 'ran' | 'failed';
+export type Verdict = 'checking' | 'allowed' | 'held' | 'approved' | 'rejected' | 'blocked' | 'failed' | 'no-verdict';
 
-export type FeedRow = {
-  id: number;
+export type Call = {
+  id: string;
   tool: string;
   args: Record<string, unknown>;
   verdict: Verdict;
+  wasHeld: boolean;
   reason?: string;
   result?: string;
-  at: string;
+  startedAt: number;
+  decidedAt?: number;
 };
 
-const verdictForEvent: Record<string, Verdict> = {
-  allowed: 'allowed',
+const armoriqVerdicts: Record<string, Verdict> = {
   hold: 'held',
+  block: 'blocked',
+  error: 'blocked',
   approved: 'approved',
   rejected: 'rejected',
   timeout: 'rejected',
-  block: 'blocked',
-  error: 'blocked',
 };
 
 export const isEndOfRun = (event: RunEvent) => event.type === 'final' || event.type === 'run_failed';
 
-export function toFeedRows(events: RunEvent[]): FeedRow[] {
-  const rows: FeedRow[] = [];
-  const latestRowFor = (tool: unknown) => [...rows].reverse().find((row) => row.tool === tool);
+export function toCalls(events: RunEvent[]): Call[] {
+  const calls: Call[] = [];
+  const byId = (id: unknown) => calls.find((call) => call.id === id);
+  // ArmorIQ events carry no call id: match the oldest call of that tool still waiting on them.
+  const oldestWaiting = (tool: unknown, verdict: Verdict) => calls.find((call) => call.tool === tool && call.verdict === verdict);
 
   for (const event of events) {
+    const at = Date.parse(event.at);
     if (event.type === 'call') {
-      rows.push({ id: rows.length, tool: event.tool, args: event.args ?? {}, verdict: 'pending', at: event.at });
+      calls.push({ id: String(event.callId ?? calls.length), tool: event.tool, args: event.args ?? {}, verdict: 'checking', wasHeld: false, startedAt: at });
       continue;
     }
-    const row = latestRowFor(event.tool);
-    if (!row) continue;
 
-    const verdict = verdictForEvent[event.type];
-    if (verdict) {
-      // An approved hold stays "approved" when the tool then runs.
-      if (!(row.verdict === 'approved' && verdict === 'allowed')) row.verdict = verdict;
-      row.reason = event.reason ?? row.reason;
+    const armoriqVerdict = armoriqVerdicts[event.type];
+    if (armoriqVerdict) {
+      const waitingOn: Verdict = armoriqVerdict === 'held' || armoriqVerdict === 'blocked' ? 'checking' : 'held';
+      const call = oldestWaiting(event.tool, waitingOn);
+      if (!call) continue;
+      call.verdict = armoriqVerdict;
+      call.wasHeld ||= armoriqVerdict === 'held';
+      call.reason = event.reason ?? event.error ?? call.reason;
+      call.decidedAt = at;
+      continue;
+    }
+
+    const call = byId(event.callId) ?? oldestWaiting(event.tool, 'checking');
+    if (!call) continue;
+    if (event.type === 'allowed' && call.verdict === 'checking') {
+      call.verdict = 'allowed';
+      call.decidedAt = at;
     } else if (event.type === 'tool_result') {
-      row.result = event.result;
-      if (row.verdict === 'pending') row.verdict = 'ran';
-    } else if (event.type === 'tool_error') {
-      row.reason ??= event.error;
-      if (row.verdict === 'pending') row.verdict = 'failed';
+      call.result = event.result;
+    } else if (event.type === 'tool_error' && call.verdict === 'checking') {
+      call.verdict = 'failed';
+      call.reason = event.error;
+      call.decidedAt = at;
     }
   }
-  return rows;
+
+  // Once the run is over, nothing is still being checked.
+  if (events.some(isEndOfRun)) {
+    for (const call of calls) if (call.verdict === 'checking') call.verdict = 'no-verdict';
+  }
+  return calls;
 }
 
-/** The held call waiting for the owner, if any. */
-export function pendingApproval(events: RunEvent[]) {
-  const held = toFeedRows(events).findLast((row) => row.verdict === 'held');
-  if (!held) return undefined;
-  const decision = events.findLast((event) => event.type === 'approval_decided')?.decision as string | undefined;
-  return { ...held, ownerDecision: decision };
+export function summarize(calls: Call[]) {
+  const count = (...verdicts: Verdict[]) => calls.filter((call) => verdicts.includes(call.verdict)).length;
+  const protectedAmount = calls
+    .filter((call) => call.verdict === 'blocked' || (call.wasHeld && call.verdict !== 'approved'))
+    .reduce((sum, call) => sum + (Number(call.args.amount) || 0), 0);
+  return {
+    total: calls.length,
+    allowed: count('allowed', 'approved'),
+    held: calls.filter((call) => call.wasHeld).length,
+    blocked: count('blocked'),
+    protectedAmount,
+  };
+}
+
+export const rupees = (amount: number) => `₹${amount.toLocaleString('en-IN')}`;
+
+type Names = { suppliers: Record<string, string>; items: Record<string, string> };
+
+// Plain-language sentence for a call, for the timeline and the attack banner.
+const describers: Record<string, (args: Record<string, any>, names: Names) => string> = {
+  check_inventory: (a) => (a.sku ? `Checked stock for ${a.sku}` : 'Checked stock levels'),
+  list_suppliers: () => 'Listed suppliers and their payee accounts',
+  get_quote: (a, n) => (a.quoteId ? `Looked up quote ${a.quoteId}` : `Looked up quotes for ${n.items[a.sku] ?? a.sku ?? 'all items'}`),
+  read_quote_document: (a) => `Read the supplier's quote document ${a.quoteId ?? ''}`.trim(),
+  add_note: (a) => `Added a note to ${a.entityId ?? 'a record'}`,
+  flag_for_review: (a) => `Flagged ${a.entityId ?? 'a record'} for human review`,
+  place_order: (a, n) => `Tried to place an order: ${rupees(Number(a.amount) || 0)} · ${n.items[a.sku] ?? a.sku} ×${a.qty}`,
+  update_payee_bank: (a, n) => `Tried to change ${n.suppliers[a.supplierId] ?? a.supplierId}'s payee bank account`,
+  delete_supplier: (a, n) => `Tried to delete supplier ${n.suppliers[a.supplierId] ?? a.supplierId}`,
+  export_supplier_list: (a) => `Tried to export the supplier list to ${a.destination ?? 'an outside destination'}`,
+};
+
+export function describeCall(call: Call, names: Names): string {
+  return describers[call.tool]?.(call.args as Record<string, any>, names) ?? `Called ${call.tool}`;
 }

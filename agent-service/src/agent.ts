@@ -106,24 +106,25 @@ async function runAgent({ config, armoriq, log }: AgentDeps, request: RunRequest
   }
 }
 
-/** Turns LangChain tool callbacks into feed events. Never decides anything. */
+/** Turns LangChain tool callbacks into feed events. Never decides anything.
+ * callId (LangChain's per-call run id) lets the dashboard tell parallel calls of the same tool apart. */
 function feedCallbacks(record: RecordEvent, armoriqEnabled: boolean) {
   const toolNames = new Map<string, string>();
   return BaseCallbackHandler.fromMethods({
     handleToolStart(_tool, input, runId, _parentRunId, _tags, _metadata, runName) {
       const tool = runName ?? 'unknown';
       toolNames.set(runId, tool);
-      record('call', { tool, args: parseArgs(input) });
+      record('call', { callId: runId, tool, args: parseArgs(input) });
     },
     handleToolEnd(output, runId) {
       const tool = toolNames.get(runId);
       // ArmorIQ has no "allow" event: a tool that finished under an active
       // ArmorIQ handler is one ArmorIQ allowed.
-      if (armoriqEnabled) record('allowed', { tool });
-      record('tool_result', { tool, result: preview(output) });
+      if (armoriqEnabled) record('allowed', { callId: runId, tool });
+      record('tool_result', { callId: runId, tool, result: preview(output) });
     },
     handleToolError(error, runId) {
-      record('tool_error', { tool: toolNames.get(runId), error: error instanceof Error ? error.message : String(error) });
+      record('tool_error', { callId: runId, tool: toolNames.get(runId), error: error instanceof Error ? error.message : String(error) });
     },
   });
 }
