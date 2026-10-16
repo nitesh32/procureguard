@@ -27,6 +27,26 @@ body {
   @apply bg-ground font-sans text-ink antialiased;
 }
 
+/* Interactive elements: pointer when clickable, not-allowed when disabled,
+   a small press feedback, and a visible keyboard focus ring. */
+button,
+a[href],
+[role='tab'],
+summary {
+  cursor: pointer;
+}
+button:disabled,
+input:disabled {
+  cursor: not-allowed;
+}
+button:not(:disabled):active {
+  transform: scale(0.98);
+}
+:where(button, a[href], [role='tab']):focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--color-brand) 60%, transparent);
+  outline-offset: 2px;
+}
+
 @keyframes pulse-dot {
   0%, 100% { opacity: 1; transform: scale(1); }
   50% { opacity: 0.4; transform: scale(0.8); }
@@ -43,6 +63,20 @@ body {
   0%, 100% { transform: translateX(0); }
   25% { transform: translateX(-4px); }
   75% { transform: translateX(4px); }
+}
+
+.text-shimmer {
+  background: linear-gradient(90deg, var(--color-muted) 30%, var(--color-ink) 50%, var(--color-muted) 70%) 0 0 / 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: shimmer 1.6s linear infinite;
+}
+@keyframes shimmer {
+  to { background-position: -200% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .text-shimmer { color: var(--color-muted); background: none; }
 }
 
 .animate-pulse-dot { animation: pulse-dot 1.8s ease-in-out infinite; }

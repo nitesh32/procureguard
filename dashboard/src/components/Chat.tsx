@@ -1,4 +1,4 @@
-import { ArrowUp, Bot, ShieldAlert, ShieldCheck, ShoppingCart, Sparkles, TriangleAlert } from 'lucide-react';
+import { ArrowUp, Bot, ChevronRight, CornerDownLeft, ShieldAlert, ShieldCheck, ShoppingCart, Sparkles, TriangleAlert } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -28,7 +28,10 @@ export function Chat({ turns, scenarios, disabled, onAsk, describe, renderHeld }
   const bottom = useRef<HTMLDivElement>(null);
   const lastTurn = turns.at(-1);
 
-  useEffect(() => bottom.current?.scrollIntoView({ behavior: 'smooth', block: 'end' }), [turns.length, lastTurn?.events.length]);
+  // Block body on purpose: newer browsers return a Promise from scrollIntoView, which React would call as a cleanup.
+  useEffect(() => {
+    bottom.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+  }, [turns.length, lastTurn?.events.length]);
 
   const ask = (text: string) => {
     if (!text.trim() || disabled) return;
@@ -60,6 +63,7 @@ export function Chat({ turns, scenarios, disabled, onAsk, describe, renderHeld }
           </div>
         )}
         <form
+          autoComplete="off"
           className="flex items-center gap-2 rounded-xl border border-line bg-panel px-3 py-1.5 shadow-sm focus-within:border-brand/50 focus-within:ring-2 focus-within:ring-brand/15"
           onSubmit={(event) => {
             event.preventDefault();
@@ -69,12 +73,19 @@ export function Chat({ turns, scenarios, disabled, onAsk, describe, renderHeld }
           <label htmlFor="prompt" className="sr-only">Ask the purchasing agent</label>
           <input
             id="prompt"
+            name="agent-prompt"
+            autoComplete="off"
+            autoCorrect="off"
+            spellCheck={false}
             value={prompt}
             onChange={(event) => setPrompt(event.target.value)}
             placeholder={disabled ? 'The agent is working…' : 'Ask the purchasing agent to check stock, order parts or process a quote…'}
             disabled={disabled}
             className="min-w-0 flex-1 bg-transparent py-1.5 text-sm placeholder:text-muted focus:outline-none"
           />
+          <kbd className="hidden items-center gap-1 text-[11px] text-muted sm:flex" aria-hidden>
+            <CornerDownLeft className="h-3 w-3" /> to send
+          </kbd>
           <button
             type="submit"
             aria-label="Send"
@@ -164,23 +175,14 @@ function TurnView({ turn, describe, renderHeld }: { turn: Turn; describe: (call:
           <Bot className="h-4 w-4" aria-hidden />
         </span>
         <div className="min-w-0 flex-1 space-y-3">
-          <div className="rounded-xl border border-line">
-            <p className="flex items-center justify-between border-b border-line px-3 py-1.5 text-xs text-muted">
-              <span>{done ? 'Actions' : 'Working…'} · every one checked by ArmorIQ</span>
-              {summary.total > 0 && (
-                <span>
-                  {summary.total} {summary.total === 1 ? 'action' : 'actions'} · <span className="text-allowed">{summary.allowed} allowed</span> ·{' '}
-                  <span className="text-held">{summary.held} held</span> · <span className="text-blocked">{summary.blocked} blocked</span>
-                </span>
-              )}
-            </p>
-            <ol className="p-1">
-              {calls.length === 0 && !done && <li className="px-2 py-1.5 text-sm text-muted">Planning…</li>}
-              {calls.map((call) => (
-                <StepRow key={call.id} call={call} sentence={describe(call)} />
-              ))}
-            </ol>
-          </div>
+          <ActionTrace
+            calls={calls}
+            done={done}
+            startedAt={turn.startedAt}
+            keepOpen={!!blocked || calls.some((call) => call.wasHeld)}
+            summary={summary}
+            describe={describe}
+          />
 
           {blocked && (
             <div role="alert" className="flex animate-slide-in items-start gap-2.5 rounded-xl border border-blocked/30 bg-blocked/5 px-4 py-3 text-sm">
@@ -205,6 +207,75 @@ function TurnView({ turn, describe, renderHeld }: { turn: Turn; describe: (call:
       </div>
     </li>
   );
+}
+
+type ActionTraceProps = {
+  calls: Call[];
+  done: boolean;
+  startedAt: number;
+  keepOpen: boolean;
+  summary: ReturnType<typeof summarize>;
+  describe: (call: Call) => string;
+};
+
+// The agent's actions for one turn. Open while working; collapses to a one-line
+// summary when done, unless ArmorIQ held or blocked something (that is the story).
+function ActionTrace({ calls, done, startedAt, keepOpen, summary, describe }: ActionTraceProps) {
+  const [open, setOpen] = useState(true);
+  useEffect(() => {
+    if (done && !keepOpen) setOpen(false);
+  }, [done, keepOpen]);
+  const elapsed = useElapsed(startedAt, done);
+
+  return (
+    <div className="rounded-xl border border-line">
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={() => setOpen(!open)}
+        className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-muted hover:bg-panel-2"
+      >
+        <ChevronRight aria-hidden className={`h-3.5 w-3.5 transition-transform ${open ? 'rotate-90' : ''}`} />
+        {done ? (
+          <span className="font-medium text-ink">
+            Used {summary.total} {summary.total === 1 ? 'tool' : 'tools'}
+          </span>
+        ) : (
+          <span className="text-shimmer font-medium">{calls.length === 0 ? 'Planning' : 'Working'} · ArmorIQ is checking every action</span>
+        )}
+        <span className="tabular-nums">· {elapsed}s</span>
+        {summary.total > 0 && (
+          <span className="ml-auto flex gap-2">
+            <span className="text-allowed">{summary.allowed} allowed</span>
+            {summary.held > 0 && <span className="text-held">{summary.held} held</span>}
+            {summary.blocked > 0 && <span className="text-blocked">{summary.blocked} blocked</span>}
+          </span>
+        )}
+      </button>
+      {open && (
+        <ol className="border-t border-line p-1">
+          {calls.length === 0 && !done && <li className="px-2 py-1.5 text-sm text-muted">Deciding what to do first…</li>}
+          {calls.map((call, index) => (
+            <StepRow key={call.id} step={index + 1} call={call} sentence={describe(call)} />
+          ))}
+        </ol>
+      )}
+    </div>
+  );
+}
+
+/** Seconds since the turn started; ticks while the agent works, freezes when done. */
+function useElapsed(startedAt: number, done: boolean) {
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    if (done) return;
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, [done]);
+  useEffect(() => {
+    if (done) setNow(Date.now());
+  }, [done]);
+  return Math.max(0, Math.round((now - startedAt) / 1000));
 }
 
 const lowerFirst = (text: string) => text.charAt(0).toLowerCase() + text.slice(1);

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { api, type RunEvent, type RunRequest } from './api';
 import { isEndOfRun } from './feed';
 
-export type Turn = { id: string; request: RunRequest; runId: string | null; events: RunEvent[]; startError: string | null };
+export type Turn = { id: string; startedAt: number; request: RunRequest; runId: string | null; events: RunEvent[]; startError: string | null };
 
 /** The conversation: one turn per prompt, each collecting its run's live SSE events. */
 export function useRun() {
@@ -15,7 +15,7 @@ export function useRun() {
   const start = useCallback(async (request: RunRequest) => {
     stream.current?.close();
     const id = crypto.randomUUID();
-    setTurns((previous) => [...previous, { id, request, runId: null, events: [], startError: null }]);
+    setTurns((previous) => [...previous, { id, startedAt: Date.now(), request, runId: null, events: [], startError: null }]);
     try {
       const { runId } = await api.startRun(request);
       update(id, (turn) => ({ ...turn, runId }));
