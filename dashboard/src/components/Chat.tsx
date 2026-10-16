@@ -22,10 +22,11 @@ type ChatProps = {
   disabled: boolean;
   onAsk: (prompt: string) => void;
   describe: (call: Call) => string;
-  renderHeld: (call: Call, turn: Turn) => ReactNode;
+  /** The held and blocked cards for a turn (they need shop data the chat doesn't have). */
+  renderCards: (calls: Call[], turn: Turn) => ReactNode;
 };
 
-export function Chat({ turns, scenarios, disabled, onAsk, describe, renderHeld }: ChatProps) {
+export function Chat({ turns, scenarios, disabled, onAsk, describe, renderCards }: ChatProps) {
   const [prompt, setPrompt] = useState('');
   const bottom = useRef<HTMLDivElement>(null);
   const lastTurn = turns.at(-1);
@@ -49,7 +50,7 @@ export function Chat({ turns, scenarios, disabled, onAsk, describe, renderHeld }
         ) : (
           <ol className="space-y-6">
             {turns.map((turn) => (
-              <TurnView key={turn.id} turn={turn} describe={describe} renderHeld={renderHeld} />
+              <TurnView key={turn.id} turn={turn} describe={describe} renderCards={renderCards} />
             ))}
           </ol>
         )}
@@ -154,14 +155,13 @@ function SuggestionChip({ scenario, disabled, onPick }: { scenario: Scenario; di
   );
 }
 
-function TurnView({ turn, describe, renderHeld }: { turn: Turn; describe: (call: Call) => string; renderHeld: ChatProps['renderHeld'] }) {
+function TurnView({ turn, describe, renderCards }: { turn: Turn; describe: (call: Call) => string; renderCards: ChatProps['renderCards'] }) {
   const calls = useMemo(() => toCalls(turn.events), [turn.events]);
   const summary = summarize(calls);
   const final = turn.events.find((event) => event.type === 'final');
   const failure = turn.events.find((event) => event.type === 'run_failed');
   const done = !!final || !!failure || !!turn.startError;
   const blocked = calls.find((call) => call.verdict === 'blocked');
-  const held = calls.find((call) => call.verdict === 'held');
 
   return (
     <li className="space-y-3">
@@ -187,19 +187,10 @@ function TurnView({ turn, describe, renderHeld }: { turn: Turn; describe: (call:
             describe={describe}
           />
 
-          {blocked && (
-            <div role="alert" className="flex animate-slide-in items-start gap-2.5 rounded-xl border border-blocked/30 bg-blocked/5 px-4 py-3 text-sm">
-              <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-blocked" aria-hidden />
-              <p>
-                <span className="font-semibold text-blocked">Attack stopped.</span> The agent {lowerFirst(describe(blocked))}. ArmorIQ blocked it before
-                it ran; nothing changed.
-              </p>
-            </div>
-          )}
-          {held && renderHeld(held, turn)}
+          {renderCards(calls, turn)}
 
-          {turn.startError && <p className="text-sm text-blocked">Could not start the run: {turn.startError}</p>}
-          {failure && <p className="text-sm text-blocked">Run failed: {String(failure.error)}</p>}
+          {turn.startError && <p className="text-sm text-blocked">Could not start the run: {turn.startError}. Check the agent service is running, then try again.</p>}
+          {failure && <p className="text-sm text-blocked">Run failed: {String(failure.error)}. Pick the scenario again to retry.</p>}
           {final && (
             <div className="answer text-sm leading-relaxed">
               {String(final.answer ?? '').trim() ? (
@@ -286,5 +277,3 @@ function useElapsed(startedAt: number, done: boolean) {
   }, [done]);
   return Math.max(0, Math.round((now - startedAt) / 1000));
 }
-
-const lowerFirst = (text: string) => text.charAt(0).toLowerCase() + text.slice(1);

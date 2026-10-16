@@ -88,6 +88,9 @@ export function summarize(calls: Call[]) {
   };
 }
 
+/** Plain-language reason for a hold, for the approval card and the voice call. */
+export const holdReason = (reason?: string) => (!reason || reason === 'rule_action_hold' ? 'every purchase order needs owner approval' : reason);
+
 export const rupees = (amount: number) => `₹${amount.toLocaleString('en-IN')}`;
 
 type Names = { suppliers: Record<string, string>; items: Record<string, string> };

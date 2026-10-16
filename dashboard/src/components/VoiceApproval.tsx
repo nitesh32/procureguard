@@ -9,7 +9,8 @@ type VoiceApprovalProps = {
   requestedBy: string;
   amount: number;
   quoteId: string;
-  reason?: string;
+  /** Plain-language reason ArmorIQ held the call. */
+  why: string;
 };
 
 // The owner hears the request and answers by voice. The ElevenLabs agent calls
@@ -25,7 +26,7 @@ export function VoiceApproval(props: VoiceApprovalProps) {
 
 type Line = { role: 'user' | 'agent'; text: string };
 
-function VoiceCall({ agentId, runId, requestedBy, amount, quoteId, reason }: VoiceApprovalProps) {
+function VoiceCall({ agentId, runId, requestedBy, amount, quoteId, why }: VoiceApprovalProps) {
   const [error, setError] = useState<string | null>(null);
   const [line, setLine] = useState<Line | null>(null);
   const conversation = useConversation({
@@ -52,7 +53,7 @@ function VoiceCall({ agentId, runId, requestedBy, amount, quoteId, reason }: Voi
           amount: `₹${amount.toLocaleString('en-IN')}`,
           quote_id: quoteId,
           requested_by: requestedBy,
-          reason: reason === 'rule_action_hold' || !reason ? 'every purchase order needs owner approval' : reason,
+          reason: why,
         },
       });
     } catch (micError) {

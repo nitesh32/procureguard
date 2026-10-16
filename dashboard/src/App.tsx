@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { api, type DashboardConfig, type Scenario, type ShopState } from './api';
+import { BlockedCard } from './components/BlockedCard';
 import { Chat } from './components/Chat';
 import { Counters } from './components/Counters';
 import { GateStatus } from './components/GateStatus';
@@ -7,7 +8,7 @@ import { Header } from './components/Header';
 import { HeldCard } from './components/HeldCard';
 import { VoiceApproval } from './components/VoiceApproval';
 import { WorldTabs } from './components/WorldTabs';
-import { describeCall, summarize, toCalls, type Call } from './feed';
+import { describeCall, holdReason, summarize, toCalls, type Call } from './feed';
 import { useRun, type Turn } from './useRun';
 
 // Events after which the shop data may have changed.
@@ -75,27 +76,47 @@ export function App() {
   // ArmorIQ is always on; the demo runs as the configured manager.
   const ask = (prompt: string) => config && run.start({ prompt, userEmail: config.users.manager, armoriqEnabled: true });
 
-  const renderHeld = (call: Call, turn: Turn) =>
-    config && (
-      <HeldCard
-        call={call}
-        itemName={names.items[String(call.args.sku)]}
-        consoleUrl={config.armoriqConsoleUrl}
-        voice={
-          config.elevenLabsAgentId &&
-          turn.runId && (
-            <VoiceApproval
-              agentId={config.elevenLabsAgentId}
-              runId={turn.runId}
-              requestedBy="the shop manager"
-              amount={Number(call.args.amount)}
-              quoteId={String(call.args.quoteId ?? '')}
-              reason={call.reason}
-            />
-          )
-        }
-      />
+  const renderCards = (calls: Call[], turn: Turn) => {
+    const blocked = calls.find((call) => call.verdict === 'blocked');
+    const held = calls.find((call) => call.wasHeld);
+    const why = held && holdReason(held.reason);
+    const decision = turn.events.findLast((event) => event.type === 'approval_decided')?.decision;
+    return (
+      <>
+        {blocked && (
+          <BlockedCard
+            call={blocked}
+            sentence={describe(blocked)}
+            supplierName={names.suppliers[String(blocked.args.supplierId)]}
+            currentAccount={shop?.suppliers.find((s) => s.id === blocked.args.supplierId)?.payee?.accountNumberMasked}
+          />
+        )}
+        {held && why && config && (
+          <HeldCard
+            call={held}
+            itemName={names.items[String(held.args.sku)]}
+            why={why}
+            waitSeconds={config.approvalWaitSeconds}
+            decision={decision}
+            consoleUrl={config.armoriqConsoleUrl}
+            voice={
+              config.elevenLabsAgentId &&
+              turn.runId && (
+                <VoiceApproval
+                  agentId={config.elevenLabsAgentId}
+                  runId={turn.runId}
+                  requestedBy="the shop manager"
+                  amount={Number(held.args.amount)}
+                  quoteId={String(held.args.quoteId ?? '')}
+                  why={why}
+                />
+              )
+            }
+          />
+        )}
+      </>
     );
+  };
 
   return (
     <div className="flex h-full flex-col">
@@ -109,7 +130,7 @@ export function App() {
         </div>
       )}
       <main className="mx-auto grid min-h-0 w-full max-w-[1600px] flex-1 grid-cols-[minmax(0,62fr)_minmax(0,38fr)] gap-4 p-4">
-        <Chat turns={run.turns} scenarios={scenarios} disabled={run.running || !config} onAsk={ask} describe={describe} renderHeld={renderHeld} />
+        <Chat turns={run.turns} scenarios={scenarios} disabled={run.running || !config} onAsk={ask} describe={describe} renderCards={renderCards} />
         <aside className="flex min-h-0 flex-col gap-3">
           <GateStatus latest={latest} sentence={latest && describe(latest)} />
           <Counters summary={summarize(allCalls)} />

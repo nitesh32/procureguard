@@ -6,6 +6,7 @@ export type DashboardConfig = {
   armoriqConsoleUrl: string;
   users: Record<string, string>;
   elevenLabsAgentId: string | null;
+  approvalWaitSeconds: number;
 };
 export type ShopState = {
   inventory: { sku: string; name: string; stock: number; reorderLevel: number; unit: string }[];
