@@ -4,7 +4,7 @@ import { Bot } from 'lucide-react';
 export function AgentAvatar({ working = false, size = 'md' }: { working?: boolean; size?: 'md' | 'lg' }) {
   const box = size === 'lg' ? 'h-12 w-12 rounded-2xl' : 'h-8 w-8 rounded-xl';
   return (
-    <span className={`relative grid shrink-0 place-items-center bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-sm ${box}`}>
+    <span className={`relative grid shrink-0 place-items-center bg-linear-to-br from-indigo-500 to-violet-600 text-white shadow-sm ${box}`}>
       <Bot className={size === 'lg' ? 'h-6 w-6' : 'h-4 w-4'} aria-hidden />
       <span
         aria-hidden
