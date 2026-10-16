@@ -1,4 +1,4 @@
-import { ArrowUp, ChevronRight, CornerDownLeft, ShieldAlert, ShieldCheck, ShoppingCart, TriangleAlert } from 'lucide-react';
+import { ArrowUp, ChevronRight, CornerDownLeft, ShieldAlert, ShieldCheck, ShoppingCart } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -42,8 +42,8 @@ export function Chat({ turns, scenarios, disabled, onAsk, describe, renderHeld }
   };
 
   return (
-    <section aria-label="Chat with the purchasing agent" className="flex min-h-0 flex-col rounded-2xl border border-line bg-panel shadow-sm">
-      <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
+    <section aria-label="Chat with the purchasing agent" className="flex min-h-0 flex-col">
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6">
         {turns.length === 0 ? (
           <Welcome scenarios={scenarios} disabled={disabled} onPick={ask} />
         ) : (
@@ -56,7 +56,7 @@ export function Chat({ turns, scenarios, disabled, onAsk, describe, renderHeld }
         <div ref={bottom} />
       </div>
 
-      <div className="border-t border-line px-6 pt-3 pb-4">
+      <div className="border-t border-line px-4 pt-3 pb-4 sm:px-6">
         {turns.length > 0 && (
           <div className="mb-2.5 flex flex-wrap gap-2" aria-label="Suggested questions">
             {scenarios.map((scenario) => (
@@ -66,7 +66,7 @@ export function Chat({ turns, scenarios, disabled, onAsk, describe, renderHeld }
         )}
         <form
           autoComplete="off"
-          className="flex items-center gap-2 rounded-xl border border-line bg-panel px-3 py-1.5 shadow-sm focus-within:border-brand/50 focus-within:ring-2 focus-within:ring-brand/15"
+          className="flex items-center gap-2 rounded-lg border border-line bg-panel py-1 pr-1 pl-3 transition-colors focus-within:border-ink"
           onSubmit={(event) => {
             event.preventDefault();
             ask(prompt);
@@ -92,7 +92,7 @@ export function Chat({ turns, scenarios, disabled, onAsk, describe, renderHeld }
             type="submit"
             aria-label="Send"
             disabled={disabled || !prompt.trim()}
-            className="grid h-8 w-8 place-items-center rounded-lg bg-brand text-white disabled:opacity-30"
+            className="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-ink text-white transition-colors hover:bg-ink-hover disabled:opacity-40"
           >
             <ArrowUp className="h-4 w-4" aria-hidden />
           </button>
@@ -118,18 +118,15 @@ function Welcome({ scenarios, disabled, onPick }: { scenarios: Scenario[]; disab
               type="button"
               disabled={disabled}
               onClick={() => onPick(scenario.prompt)}
-              className={`flex items-center gap-3 rounded-xl border bg-panel px-4 py-3 text-left transition hover:-translate-y-px hover:shadow-md disabled:opacity-40 ${
-                scenario.expect === 'blocked' ? 'border-blocked/40' : 'border-line'
-              }`}
+              className="flex min-h-10 items-center gap-3 rounded-lg border border-line px-4 py-3 text-left transition-colors hover:bg-panel-2 disabled:opacity-40"
             >
               {look && <look.Icon className={`h-5 w-5 shrink-0 ${look.tone}`} aria-hidden />}
               <span className="min-w-0 flex-1">
-                <span className="block text-sm font-medium">
+                <span className="block text-sm font-medium capitalize">
                   {scenario.id} · {scenario.title}
                 </span>
-                <span className="block truncate text-xs text-muted">{look?.hint ?? scenario.prompt}</span>
+                <span className={`block truncate text-xs ${scenario.expect === 'blocked' ? 'text-blocked' : 'text-muted'}`}>{look?.hint ?? scenario.prompt}</span>
               </span>
-              {scenario.expect === 'blocked' && <TriangleAlert className="h-4 w-4 text-blocked" aria-label="attack" />}
             </button>
           );
         })}
@@ -146,12 +143,13 @@ function SuggestionChip({ scenario, disabled, onPick }: { scenario: Scenario; di
       disabled={disabled}
       onClick={() => onPick(scenario.prompt)}
       title={scenario.prompt}
-      className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors disabled:opacity-40 ${
-        adversarial ? 'border-blocked/40 text-blocked hover:bg-blocked/5' : 'border-line text-ink hover:bg-panel-2'
+      className={`inline-flex min-w-0 items-center rounded-md border border-line px-3 py-1.5 text-xs font-medium capitalize transition-colors hover:bg-panel-2 disabled:opacity-40 ${
+        adversarial ? 'text-blocked' : 'text-ink'
       }`}
     >
-      {scenario.id} · {scenario.title}
-      {adversarial && <TriangleAlert className="h-3.5 w-3.5" aria-label="attack" />}
+      <span className="truncate">
+        {scenario.id} · {scenario.title}
+      </span>
     </button>
   );
 }
@@ -168,7 +166,7 @@ function TurnView({ turn, describe, renderHeld }: { turn: Turn; describe: (call:
   return (
     <li className="space-y-3">
       <div className="flex justify-end">
-        <p className="max-w-[80%] rounded-2xl rounded-br-md bg-brand px-4 py-2 text-sm text-white">{turn.request.prompt}</p>
+        <p className="max-w-[80%] rounded-lg bg-ink px-4 py-2 text-sm break-words text-white">{turn.request.prompt}</p>
       </div>
 
       <div className="flex gap-3">
@@ -203,7 +201,7 @@ function TurnView({ turn, describe, renderHeld }: { turn: Turn; describe: (call:
           {turn.startError && <p className="text-sm text-blocked">Could not start the run: {turn.startError}</p>}
           {failure && <p className="text-sm text-blocked">Run failed: {String(failure.error)}</p>}
           {final && (
-            <div className="answer animate-slide-in text-sm leading-relaxed">
+            <div className="answer text-sm leading-relaxed">
               {String(final.answer ?? '').trim() ? (
                 // react-markdown never renders raw HTML: answers can echo attacker-controlled quote text.
                 <Markdown remarkPlugins={[remarkGfm]}>{String(final.answer)}</Markdown>
@@ -239,20 +237,20 @@ function ActionTrace({ calls, done, startedAt, keepOpen, summary, describe }: Ac
   const elapsed = useElapsed(startedAt, done);
 
   return (
-    <div className="rounded-xl border border-line">
+    <div className="rounded-lg border border-line">
       <button
         type="button"
         aria-expanded={open}
         onClick={() => setOpen(!open)}
-        className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-muted hover:bg-panel-2"
+        className="flex w-full min-w-0 flex-wrap items-center gap-x-2 gap-y-1 rounded-lg px-3 py-2 text-left text-xs text-muted transition-colors hover:bg-panel-2"
       >
-        <ChevronRight aria-hidden className={`h-3.5 w-3.5 transition-transform ${open ? 'rotate-90' : ''}`} />
+        <ChevronRight aria-hidden className={`h-3.5 w-3.5 ${open ? 'rotate-90' : ''}`} />
         {done ? (
           <span className="font-medium text-ink">
             Used {summary.total} {summary.total === 1 ? 'tool' : 'tools'}
           </span>
         ) : (
-          <span className="text-shimmer font-medium">{calls.length === 0 ? 'Planning' : 'Working'} · ArmorIQ is checking every action</span>
+          <span className="font-medium text-ink">{calls.length === 0 ? 'Planning' : 'Working'} · ArmorIQ is checking every action</span>
         )}
         <span className="tabular-nums">· {elapsed}s</span>
         {summary.total > 0 && (

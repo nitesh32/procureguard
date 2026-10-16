@@ -18,15 +18,15 @@ export function StepRow({ step, call, sentence }: { step: number; call: Call; se
   const blocked = call.verdict === 'blocked';
 
   return (
-    <li className={`animate-slide-in rounded-lg ${blocked ? 'animate-shake bg-blocked/5 ring-1 ring-blocked/30' : ''}`}>
+    <li className={`rounded-md ${blocked ? 'bg-blocked/5' : ''}`}>
       <button
         type="button"
         aria-expanded={open}
         onClick={() => setOpen(!open)}
-        className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left hover:bg-panel-2 focus-visible:bg-panel-2 focus-visible:outline-none"
+        className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left transition-colors hover:bg-panel-2"
       >
         <span className="w-5 shrink-0 text-right font-mono text-[11px] text-muted tabular-nums">{step}</span>
-        <ChevronRight aria-hidden className={`h-3.5 w-3.5 shrink-0 text-muted transition-transform ${open ? 'rotate-90' : ''}`} />
+        <ChevronRight aria-hidden className={`h-3.5 w-3.5 shrink-0 text-muted ${open ? 'rotate-90' : ''}`} />
         <span className={`min-w-0 flex-1 truncate text-sm ${blocked ? 'font-medium text-blocked' : ''}`}>{sentence}</span>
         <code className="hidden shrink-0 font-mono text-[11px] text-muted xl:inline">{call.tool}</code>
         <VerdictPill verdict={call.verdict} />
