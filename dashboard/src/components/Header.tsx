@@ -1,5 +1,4 @@
 import armoriqWordmark from '../assets/armoriq-wordmark.svg';
-import { ArmorIQMark } from './ArmorIQMark';
 
 export function Header() {
   return (
@@ -15,10 +14,7 @@ export function Header() {
         </span>
         <span className="flex items-center gap-2 text-muted">
           Protected by
-          <span className="flex items-center gap-1.5">
-            <ArmorIQMark className="h-4 w-4" />
-            <img src={armoriqWordmark} alt="ArmorIQ" className="h-3.5" />
-          </span>
+          <img src={armoriqWordmark} alt="ArmorIQ" className="h-3.5" />
         </span>
       </div>
     </header>

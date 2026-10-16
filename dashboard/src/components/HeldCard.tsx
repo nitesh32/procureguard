@@ -48,14 +48,7 @@ export function HeldCard({ call, itemName, why, waitSeconds, decision, consoleUr
       </div>
       <p className="mt-1 text-sm text-muted">ArmorIQ held this purchase order. Nothing is ordered until the owner approves it.</p>
 
-      <dl className="mt-3 grid grid-cols-[7rem_minmax(0,1fr)] gap-x-4 gap-y-1.5 text-sm">
-        {rows.map(([label, value]) => (
-          <div key={label} className="contents">
-            <dt className="text-xs leading-5 font-medium text-muted">{label}</dt>
-            <dd className="min-w-0 break-words">{value}</dd>
-          </div>
-        ))}
-      </dl>
+      <Facts rows={rows} />
 
       {decision && (
         <p role="status" className="mt-3 text-sm font-medium">
@@ -75,6 +68,20 @@ export function HeldCard({ call, itemName, why, waitSeconds, decision, consoleUr
         {voice}
       </div>
     </section>
+  );
+}
+
+/** Key/value rows of a decision card; stacked on narrow screens. */
+export function Facts({ rows }: { rows: [string, ReactNode][] }) {
+  return (
+    <dl className="mt-3 grid gap-x-4 text-sm sm:grid-cols-[9rem_minmax(0,1fr)] sm:gap-y-1.5">
+      {rows.map(([label, value]) => (
+        <div key={label} className="contents">
+          <dt className="mt-2 text-xs leading-5 font-medium text-muted sm:mt-0">{label}</dt>
+          <dd className="min-w-0 break-words tabular-nums">{value}</dd>
+        </div>
+      ))}
+    </dl>
   );
 }
 

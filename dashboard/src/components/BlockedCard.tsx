@@ -1,4 +1,5 @@
 import type { Call } from '../feed';
+import { Facts } from './HeldCard';
 import { VerdictPill } from './VerdictPill';
 
 type BlockedCardProps = {
@@ -42,14 +43,7 @@ export function BlockedCard({ call, sentence, supplierName, currentAccount }: Bl
         <h3 className="text-[15px] font-semibold">Bank change blocked</h3>
       </div>
       <p className="mt-1 text-sm text-muted">{summary}</p>
-      <dl className="mt-3 grid grid-cols-[9rem_minmax(0,1fr)] gap-x-4 gap-y-1.5 text-sm">
-        {rows.map(([label, value]) => (
-          <div key={label} className="contents">
-            <dt className="text-xs leading-5 font-medium text-muted">{label}</dt>
-            <dd className="min-w-0 break-words tabular-nums">{value}</dd>
-          </div>
-        ))}
-      </dl>
+      <Facts rows={rows} />
     </section>
   );
 }
