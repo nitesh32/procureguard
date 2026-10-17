@@ -24,7 +24,7 @@ export function createApp(deps: AgentDeps) {
   app.get('/scenarios', (c) => c.json(scenarios));
 
   // Runtime settings for the dashboard, so changing them never needs a rebuild.
-  app.get('/config', (c) => c.json({ armoriqConsoleUrl, users: config.users, elevenLabsAgentId: config.ELEVENLABS_AGENT_ID ?? null }));
+  app.get('/config', (c) => c.json({ armoriqConsoleUrl, users: config.users, elevenLabsAgentId: config.ELEVENLABS_AGENT_ID ?? null, approvalWaitSeconds: config.ARMORIQ_APPROVAL_WAIT_SECONDS }));
 
   app.post('/runs', async (c) => {
     const request = runRequestSchema.safeParse(await c.req.json().catch(() => ({})));

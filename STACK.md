@@ -11,7 +11,7 @@ The stack decided for the Guarded Procurement Agent. The blueprint is in [docs/B
 | MCP server | `@modelcontextprotocol/sdk` (Streamable HTTP) on Hono | `/mcp` and `GET /health`. Stateless tools; no permission logic. |
 | Data store | In-memory store seeded from `seed/shop.json` | `POST /reset` reloads the seed. Needs one long-running process (no serverless). |
 | Agent API | Hono + Server-Sent Events | `POST /runs`, `GET /runs/:id/events`, `POST /approvals/:id`, `POST /reset` |
-| Dashboard | Vite + React + Tailwind CSS | The build is served by the agent service |
+| Dashboard | Vite + React + Tailwind CSS, `lucide-react` icons, Geist and JetBrains Mono fonts (`@fontsource-variable`) | The build is served by the agent service. Design rules in [docs/DESIGN.md](docs/DESIGN.md). |
 | Voice | `@elevenlabs/react` in-browser conversation with a client tool | Bonus feature: the first thing cut if time is short |
 | Config | `zod` schema over `process.env`, validated at startup | Fails fast when a variable is missing |
 | Tests | Vitest | Unit, contract and guard tests on every run; real-ArmorIQ integration tests in a tagged suite run manually |

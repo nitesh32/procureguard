@@ -6,11 +6,12 @@ export type DashboardConfig = {
   armoriqConsoleUrl: string;
   users: Record<string, string>;
   elevenLabsAgentId: string | null;
+  approvalWaitSeconds: number;
 };
 export type ShopState = {
   inventory: { sku: string; name: string; stock: number; reorderLevel: number; unit: string }[];
   orders: { id: string; quoteId: string; supplierId: string; sku: string; qty: number; amount: number; createdAt: string }[];
-  suppliers: { id: string; name: string; payee?: { bankName: string; accountNumberMasked: string; updatedAt: string } }[];
+  suppliers: { id: string; name: string; payee?: { bankName: string; accountNumberMasked: string; ifsc: string; updatedAt: string } }[];
   reviewFlags: { id: string; entityId: string; reason: string }[];
 };
 export type RunRequest = { prompt: string; userEmail: string; armoriqEnabled: boolean };
