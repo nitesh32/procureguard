@@ -1,19 +1,21 @@
 @import 'tailwindcss';
 
-/* Flat zinc theme (docs/DESIGN.md). Colour only for ArmorIQ verdicts. Fonts are bundled (works offline). */
+/* Calm warm-neutral theme (docs/DESIGN.md). Colour only for ArmorIQ verdicts. Fonts are bundled (works offline). */
 @theme {
-  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'Geist Variable', ui-sans-serif, system-ui, sans-serif;
   --font-mono: 'JetBrains Mono Variable', ui-monospace, Menlo, monospace;
+  --color-canvas: #fbfbfa;
   --color-panel: #ffffff;
-  --color-panel-2: #f4f4f5;
-  --color-line: #e4e4e7;
+  --color-panel-2: #f1f0ec;
+  --color-line: #ecebe9;
+  --color-line-strong: #e2e2df;
   --color-ink: #18181b;
   --color-ink-hover: #27272a;
-  --color-muted: #71717a;
-  --color-allowed: #2e7d4f;
+  --color-muted: #71716e;
+  --color-faint: #a1a19d;
+  --color-allowed: #15803d;
   --color-held: #b45309;
-  --color-blocked: #b42318;
-  --color-checking: #71717a;
+  --color-blocked: #b91c1c;
 }
 
 html,
@@ -23,13 +25,12 @@ body,
 }
 
 body {
-  @apply bg-panel font-sans text-ink antialiased;
+  @apply bg-canvas font-sans text-ink antialiased;
 }
 
 /* Pointer when clickable, not-allowed when disabled, and a visible keyboard focus ring. */
 button,
 a[href],
-[role='tab'],
 summary {
   cursor: pointer;
 }
@@ -37,12 +38,12 @@ button:disabled,
 input:disabled {
   cursor: not-allowed;
 }
-:where(button, a[href], [role='tab'], summary):focus-visible {
+:where(button, a[href], summary):focus-visible {
   outline: 2px solid var(--color-ink);
   outline-offset: 2px;
 }
 
-/* The one "running" pulse (docs/DESIGN.md §7). */
+/* The one "calling" pulse on the voice orb (docs/DESIGN.md §7). */
 @keyframes pulse-dot {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.35; }
@@ -59,12 +60,17 @@ input:disabled {
 }
 
 /* Agent answer rendered from Markdown */
-.answer > * + * { margin-top: 0.6rem; }
+.answer > * + * { margin-top: 0.75rem; }
 .answer strong { font-weight: 600; }
 .answer ul { list-style: disc; padding-left: 1.25rem; }
 .answer ol { list-style: decimal; padding-left: 1.25rem; }
-.answer h1, .answer h2, .answer h3 { font-weight: 600; font-size: 0.95rem; }
-.answer code { font-family: var(--font-mono); font-size: 0.8rem; background: var(--color-panel-2); padding: 0.05rem 0.3rem; border-radius: 4px; }
-.answer table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
-.answer th, .answer td { border: 1px solid var(--color-line); padding: 0.3rem 0.5rem; text-align: left; }
-.answer th { background: var(--color-panel-2); color: var(--color-muted); font-weight: 600; }
+.answer h1, .answer h2, .answer h3 { font-weight: 600; font-size: 1rem; }
+.answer code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--color-panel-2); padding: 0.05rem 0.3rem; border-radius: 4px; }
+.answer table { display: block; overflow-x: auto; width: 100%; border: 1px solid var(--color-line); border-radius: 0.75rem; background: var(--color-panel); padding: 0.5rem 1.25rem; font-size: 0.875rem; border-collapse: collapse; }
+.answer th, .answer td { padding: 0.65rem 0.75rem 0.65rem 0; text-align: left; white-space: nowrap; }
+.answer th:last-child, .answer td:last-child { padding-right: 0; }
+.answer th { color: var(--color-faint); font-weight: 400; font-size: 0.8125rem; }
+.answer tbody tr { border-top: 1px solid var(--color-line); }
+.answer td:first-child { font-weight: 500; }
+/* Right-aligned columns (`---:` in Markdown) hold numbers: mono, tabular. */
+.answer td[style*='right'] { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }

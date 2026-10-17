@@ -1,22 +1,13 @@
-import armoriqWordmark from '../assets/armoriq-wordmark.svg';
-
 export function Header() {
   return (
-    <header className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-line px-4 py-3 sm:px-6">
-      <div className="flex min-w-0 items-center gap-2.5">
-        <h1 className="text-base font-semibold tracking-tight">Procureguard</h1>
-        <span className="rounded-md border border-line px-1.5 py-0.5 font-mono text-[11px] font-medium tracking-wider text-ink uppercase">Sandbox</span>
-        <p className="hidden truncate text-sm text-muted xl:block">An AI purchasing agent. ArmorIQ checks every action before it runs.</p>
-      </div>
-      <div className="ml-auto flex items-center gap-4 text-sm">
-        <span className="hidden text-muted sm:inline">
-          Acting as <span className="font-medium text-ink">Shop manager</span>
-        </span>
-        <span className="flex items-center gap-2 text-muted">
-          Protected by
-          <img src={armoriqWordmark} alt="ArmorIQ" className="h-3.5" />
-        </span>
-      </div>
+    <header className="flex items-center gap-3 border-b border-line bg-panel px-4 py-3.5 sm:px-6">
+      <h1 className="text-base font-medium tracking-tight">Procureguard</h1>
+      <span className="rounded-full bg-panel-2 px-2.5 py-0.5 text-xs text-ink">Sandbox</span>
+      <span className="hidden truncate text-sm text-faint sm:inline">Acting as Shop manager</span>
+      <span className="ml-auto flex shrink-0 items-center gap-2 text-sm text-muted">
+        <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-allowed" />
+        Protected by ArmorIQ
+      </span>
     </header>
   );
 }
