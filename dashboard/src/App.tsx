@@ -1,13 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { api, type DashboardConfig, type Scenario, type ShopState } from './api';
+import { BlockedCard } from './components/BlockedCard';
 import { Chat } from './components/Chat';
-import { Counters } from './components/Counters';
-import { GateStatus } from './components/GateStatus';
 import { Header } from './components/Header';
 import { HeldCard } from './components/HeldCard';
+import { SidePanel } from './components/SidePanel';
 import { VoiceApproval } from './components/VoiceApproval';
-import { WorldTabs } from './components/WorldTabs';
-import { describeCall, summarize, toCalls, type Call } from './feed';
+import { describeCall, holdReason, toCalls, type Call } from './feed';
 import { useRun, type Turn } from './useRun';
 
 // Events after which the shop data may have changed.
@@ -58,10 +57,8 @@ export function App() {
     if (lastEvent && shopChangingEvents.has(lastEvent.type)) void refreshShop().catch(() => setApiDown(true));
   }, [lastEvent, refreshShop]);
 
-  // Totals and world effects cover the whole conversation; the gate shows the newest action.
+  // The side panel covers the whole conversation.
   const allCalls = useMemo(() => run.turns.flatMap((turn) => toCalls(turn.events)), [run.turns]);
-  const currentCalls = useMemo(() => (run.current ? toCalls(run.current.events) : []), [run.current]);
-  const latest = currentCalls.at(-1);
 
   const names = useMemo(
     () => ({
@@ -75,46 +72,62 @@ export function App() {
   // ArmorIQ is always on; the demo runs as the configured manager.
   const ask = (prompt: string) => config && run.start({ prompt, userEmail: config.users.manager, armoriqEnabled: true });
 
-  const renderHeld = (call: Call, turn: Turn) =>
-    config && (
-      <HeldCard
-        call={call}
-        itemName={names.items[String(call.args.sku)]}
-        consoleUrl={config.armoriqConsoleUrl}
-        voice={
-          config.elevenLabsAgentId &&
-          turn.runId && (
-            <VoiceApproval
-              agentId={config.elevenLabsAgentId}
-              runId={turn.runId}
-              requestedBy="the shop manager"
-              amount={Number(call.args.amount)}
-              quoteId={String(call.args.quoteId ?? '')}
-              reason={call.reason}
-            />
-          )
-        }
-      />
+  const renderCards = (calls: Call[], turn: Turn) => {
+    const blocked = calls.find((call) => call.verdict === 'blocked');
+    const held = calls.find((call) => call.wasHeld);
+    const why = held && holdReason(held.reason);
+    const decision = turn.events.findLast((event) => event.type === 'approval_decided')?.decision;
+    return (
+      <>
+        {blocked && config && (
+          <BlockedCard
+            call={blocked}
+            sentence={describe(blocked)}
+            currentPayee={shop?.suppliers.find((s) => s.id === blocked.args.supplierId)?.payee}
+            consoleUrl={config.armoriqConsoleUrl}
+          />
+        )}
+        {held && why && config && (
+          <HeldCard
+            call={held}
+            itemName={names.items[String(held.args.sku)]}
+            why={why}
+            waitSeconds={config.approvalWaitSeconds}
+            decision={decision}
+            consoleUrl={config.armoriqConsoleUrl}
+            voice={
+              config.elevenLabsAgentId &&
+              turn.runId && (
+                <VoiceApproval
+                  agentId={config.elevenLabsAgentId}
+                  runId={turn.runId}
+                  requestedBy="the shop manager"
+                  amount={Number(held.args.amount)}
+                  quoteId={String(held.args.quoteId ?? '')}
+                  why={why}
+                />
+              )
+            }
+          />
+        )}
+      </>
     );
+  };
 
   return (
     <div className="flex h-full flex-col">
       <Header />
       {apiDown && (
-        <div className="flex items-center gap-3 border-b border-blocked/20 bg-blocked/5 px-6 py-2 text-sm text-blocked">
-          The agent service is not reachable. Start it with <code className="font-mono">make up</code>.
-          <button type="button" onClick={() => void load()} className="rounded-md border border-blocked/30 px-2 py-0.5">
+        <div role="alert" className="flex flex-wrap items-center gap-3 bg-blocked/5 px-4 py-2 text-sm text-blocked sm:px-6">
+          The agent service is not reachable. Start it with <code className="font-mono">make up</code>, then retry.
+          <button type="button" onClick={() => void load()} className="h-8 rounded-md border border-blocked/30 px-3 font-medium transition-colors hover:bg-blocked/10">
             Retry
           </button>
         </div>
       )}
-      <main className="mx-auto grid min-h-0 w-full max-w-[1600px] flex-1 grid-cols-[minmax(0,62fr)_minmax(0,38fr)] gap-4 p-4">
-        <Chat turns={run.turns} scenarios={scenarios} disabled={run.running || !config} onAsk={ask} describe={describe} renderHeld={renderHeld} />
-        <aside className="flex min-h-0 flex-col gap-3">
-          <GateStatus latest={latest} sentence={latest && describe(latest)} />
-          <Counters summary={summarize(allCalls)} />
-          <WorldTabs shop={shop} calls={allCalls} />
-        </aside>
+      <main className="mx-auto flex min-h-0 w-full max-w-[1440px] flex-1 flex-col overflow-y-auto lg:grid lg:grid-cols-[minmax(0,1fr)_380px] lg:overflow-hidden">
+        <Chat turns={run.turns} scenarios={scenarios} disabled={run.running || !config} onAsk={ask} describe={describe} renderCards={renderCards} />
+        <SidePanel shop={shop} calls={allCalls} />
       </main>
     </div>
   );

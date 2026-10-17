@@ -9,7 +9,8 @@ type VoiceApprovalProps = {
   requestedBy: string;
   amount: number;
   quoteId: string;
-  reason?: string;
+  /** Plain-language reason ArmorIQ held the call. */
+  why: string;
 };
 
 // The owner hears the request and answers by voice. The ElevenLabs agent calls
@@ -25,7 +26,7 @@ export function VoiceApproval(props: VoiceApprovalProps) {
 
 type Line = { role: 'user' | 'agent'; text: string };
 
-function VoiceCall({ agentId, runId, requestedBy, amount, quoteId, reason }: VoiceApprovalProps) {
+function VoiceCall({ agentId, runId, requestedBy, amount, quoteId, why }: VoiceApprovalProps) {
   const [error, setError] = useState<string | null>(null);
   const [line, setLine] = useState<Line | null>(null);
   const conversation = useConversation({
@@ -52,7 +53,7 @@ function VoiceCall({ agentId, runId, requestedBy, amount, quoteId, reason }: Voi
           amount: `₹${amount.toLocaleString('en-IN')}`,
           quote_id: quoteId,
           requested_by: requestedBy,
-          reason: reason === 'rule_action_hold' || !reason ? 'every purchase order needs owner approval' : reason,
+          reason: why,
         },
       });
     } catch (micError) {
@@ -67,22 +68,22 @@ function VoiceCall({ agentId, runId, requestedBy, amount, quoteId, reason }: Voi
 
   if (!inCall) {
     return (
-      <div className="mt-3 flex flex-wrap items-center gap-3">
+      <>
         <button
           type="button"
           onClick={() => void callOwner()}
-          className="inline-flex items-center gap-2 rounded-full border border-held/40 bg-panel px-4 py-1.5 text-sm font-medium text-held shadow-sm hover:bg-held/5"
+          className="inline-flex h-10 items-center gap-2 rounded-lg border border-line-strong bg-panel px-4 text-sm font-medium transition-colors hover:bg-panel-2"
         >
-          <Mic className="h-4 w-4" aria-hidden /> Ask the owner by voice
+          <Mic className="h-4 w-4" aria-hidden /> Ask Owner by Voice
         </button>
-        {line && <span className="text-xs text-muted">Last call: “{line.text}”</span>}
-        {error && <span className="text-xs text-blocked">{error} · use the ArmorIQ console instead.</span>}
-      </div>
+        {line && <p className="basis-full text-xs text-muted">Last call: “{line.text}”</p>}
+        {error && <p className="basis-full text-xs text-blocked">{error}. Approve in the ArmorIQ console instead.</p>}
+      </>
     );
   }
 
   return (
-    <div className="mt-3 flex items-center gap-4 rounded-2xl border border-line bg-panel px-4 py-3 shadow-sm">
+    <div className="flex basis-full items-center gap-4 rounded-xl bg-panel-2 px-4 py-3">
       <VoiceOrb
         active={connected}
         speaker={speaker}
@@ -107,7 +108,7 @@ function VoiceCall({ agentId, runId, requestedBy, amount, quoteId, reason }: Voi
         type="button"
         onClick={conversation.endSession}
         aria-label="End call"
-        className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-blocked text-white shadow-sm hover:bg-blocked/90"
+        className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-blocked text-white transition-colors hover:bg-blocked/90"
       >
         <PhoneOff className="h-4 w-4" aria-hidden />
       </button>
@@ -115,12 +116,11 @@ function VoiceCall({ agentId, runId, requestedBy, amount, quoteId, reason }: Voi
   );
 }
 
-// An orb that breathes with the live audio level: violet while the assistant
+// A solid circle that scales with the live audio level: ink while the assistant
 // speaks, green while the owner speaks. Driven by requestAnimationFrame, not
 // React state, so it stays smooth.
 function VoiceOrb({ active, speaker, level }: { active: boolean; speaker: 'agent' | 'user'; level: () => number }) {
   const orb = useRef<HTMLSpanElement>(null);
-  const halo = useRef<HTMLSpanElement>(null);
   const read = useRef(level);
   read.current = level;
 
@@ -131,23 +131,17 @@ function VoiceOrb({ active, speaker, level }: { active: boolean; speaker: 'agent
     const tick = () => {
       smooth += (Math.min(1, read.current() * 2.2) - smooth) * 0.25;
       if (orb.current) orb.current.style.transform = `scale(${1 + smooth * 0.35})`;
-      if (halo.current) {
-        halo.current.style.transform = `scale(${1.15 + smooth * 0.9})`;
-        halo.current.style.opacity = String(0.15 + smooth * 0.45);
-      }
       frame = requestAnimationFrame(tick);
     };
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
   }, [active]);
 
-  const colours = speaker === 'agent' ? 'from-indigo-500 to-violet-600' : 'from-emerald-400 to-green-600';
   return (
-    <span className="relative grid h-12 w-12 shrink-0 place-items-center" aria-hidden>
-      <span ref={halo} className={`absolute inset-0 rounded-full bg-linear-to-br opacity-20 blur-md ${colours}`} />
+    <span className="grid h-12 w-12 shrink-0 place-items-center" aria-hidden>
       <span
         ref={orb}
-        className={`relative h-10 w-10 rounded-full bg-linear-to-br shadow-lg transition-colors duration-300 ${colours} ${active ? '' : 'animate-pulse-dot'}`}
+        className={`h-9 w-9 rounded-full transition-colors duration-200 ${speaker === 'agent' ? 'bg-ink' : 'bg-allowed'} ${active ? '' : 'animate-pulse-dot'}`}
       />
     </span>
   );

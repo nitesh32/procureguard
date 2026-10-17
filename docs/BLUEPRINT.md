@@ -273,18 +273,21 @@ Cover **every** tool that can move money or change payees. If a sibling tool is 
 
 ## 9. Dashboard (one screen)
 
+Visual rules: `docs/DESIGN.md`.
+
 - **Top:**
   - a persistent **SANDBOX** label
-  - a user switcher (manager or owner)
-  - an ArmorIQ ON/OFF toggle; when OFF, show the warning badge "ArmorIQ disabled – comparison only"
-  - a Reset demo button
-- **Scenario buttons:** "Restock brake pads", "Order engine parts", "Process Apex quote", plus a free-text prompt box.
-- **Live decision feed (main column):** one row per tool call showing the tool name, short args, a verdict badge (allowed / held / blocked / approved / rejected), the reason, and a timestamp. A blocked row stays highlighted.
-- **Side panels:** inventory (stock vs reorder level), orders (newest first), suppliers with their current masked payee account. During the scam scene this panel proves the account **did not change**.
-- **Approval card:** appears on a hold with the amount, supplier and reason, plus the voice session controls and the console link.
+  - "Acting as Shop manager" (role only; every UI run is the manager)
+  - "Protected by ArmorIQ"
+  - No user switcher, ON/OFF toggle or reset button in the UI. The OFF comparison runs headless (`make scene N=3 OFF=1`); reset with `make reset`, Shift+R, or `?reset` in the URL.
+- **Scenario buttons:** the three scenes ("Check low stock", "Restock brake pads", "Process Apex quote"), plus a free-text prompt box.
+- **Chat (main column):** each turn shows its action trace (always open), one row per tool call with the time, a plain sentence, the tool name, a verdict word (allowed / held / blocked / approved / not approved / check failed) and the reason and args on demand. Blocked rows are red text, held rows amber.
+- **Blocked card:** for a bank change, before/after: payments still go to the account on file, the requested account was not applied, decided by ArmorIQ policy.
+- **Side panel (plain text, no cards):** this session's allowed / held / blocked counts, a decision log (newest first), suppliers with their current masked payee account, low stock, review flags and orders (pending approval included). During the scam scene this panel proves the account **did not change**.
+- **Approval card:** appears on a hold with the item, amount, requester, reason and a countdown, plus the console link and the voice call.
 - **Agent answer:** the final message, shown at the bottom of the run.
 - **Receipt panel** (trust track): for each run, shows the signed plan hash or proof, and what was planned vs allowed vs blocked. Only if ArmorIQ's trace or proof export API is simple to call. Otherwise, use the console screenshot.
-- **After an OFF run:** auto-reset, or show a persistent "payee tampered, reset" banner, so the next ON take never starts from corrupted state.
+- **After an OFF run:** run `make reset` (or Shift+R in the dashboard) so the next ON take never starts from corrupted state.
 - States: loading, empty, API-down banner, run-in-progress. No layout shift while events stream.
 
 ## 10. The three scenes (acceptance criteria)
@@ -314,7 +317,7 @@ Record which model and prompt reproduce it reliably in `docs/DECISIONS.md`. Neve
 | 3. Console | Register agent and MCP, users, policies (in order) | `check-setup` prints all OK |
 | 4. Agent + ArmorIQ | Agent loop, scope, events, `run-scenario` CLI | Scenes 1 and 3 pass headless with real ArmorIQ verdicts; the block is visible in the console. **This is the eligibility milestone; target Oct 13.** |
 | 5. Hold path | Scene 2 with console approval | Scene 2 passes using console approval |
-| 6. Dashboard | Feed, panels, scenario buttons, toggle, SSE | All scenes run from the UI without a reload |
+| 6. Dashboard | Feed, panels, scenario buttons, SSE | All scenes run from the UI without a reload |
 | 7. Voice | ElevenLabs session on hold, decision capture, resolve per §8 (`await_approval` path if it exists) | Scene 2 passes with voice; the console fallback still works |
 | 7b. Receipt (stretch) | Receipt panel from the trace or proof export (§9) | Each run shows its plan hash and verdicts |
 | 4b. Delegation (stretch, **cut-off Oct 15**) | Orchestrator, Quote Reader and Buyer via `delegate()` (§7) | Scene 3 is refused because the Quote Reader was never delegated `update_payee_bank` |

@@ -1,7 +1,6 @@
-import { ChevronRight } from 'lucide-react';
 import { useState } from 'react';
-import type { Call } from '../feed';
-import { VerdictPill } from './VerdictPill';
+import { clock, type Call } from '../feed';
+import { VerdictGlyph, VerdictWord } from './Verdict';
 
 const reasonText: Record<string, string> = {
   tool_denied: 'ArmorIQ policy blocks this tool',
@@ -10,35 +9,35 @@ const reasonText: Record<string, string> = {
 };
 
 const decidedBy = (call: Call) =>
-  call.reason ? (reasonText[call.reason] ?? call.reason) : call.verdict === 'allowed' ? 'ArmorIQ policy allows this tool' : 'No decision yet';
+  call.verdict === 'error' ? `ArmorIQ check failed, so it fails closed: ${call.reason ?? 'no details'}` : call.reason ? (reasonText[call.reason] ?? call.reason) : call.verdict === 'allowed' ? 'ArmorIQ policy allows this tool' : 'No decision yet';
 
-// One tool call inside the chat: plain sentence first, raw details on demand.
-export function StepRow({ step, call, sentence }: { step: number; call: Call; sentence: string }) {
+const sentenceTone: Partial<Record<Call['verdict'], string>> = { blocked: 'text-blocked', held: 'text-held' };
+
+// One tool call: time, glyph, plain sentence, tool and ArmorIQ's word. Raw details on demand.
+export function StepRow({ call, sentence }: { call: Call; sentence: string }) {
   const [open, setOpen] = useState(false);
-  const blocked = call.verdict === 'blocked';
 
   return (
-    <li className={`animate-slide-in rounded-lg ${blocked ? 'animate-shake bg-blocked/5 ring-1 ring-blocked/30' : ''}`}>
+    <li>
       <button
         type="button"
         aria-expanded={open}
         onClick={() => setOpen(!open)}
-        className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left hover:bg-panel-2 focus-visible:bg-panel-2 focus-visible:outline-none"
+        className="-mx-2 flex w-[calc(100%+1rem)] min-w-0 items-center gap-3 rounded-md px-2 py-2 text-left transition-colors hover:bg-panel-2/60"
       >
-        <span className="w-5 shrink-0 text-right font-mono text-[11px] text-muted tabular-nums">{step}</span>
-        <ChevronRight aria-hidden className={`h-3.5 w-3.5 shrink-0 text-muted transition-transform ${open ? 'rotate-90' : ''}`} />
-        <span className={`min-w-0 flex-1 truncate text-sm ${blocked ? 'font-medium text-blocked' : ''}`}>{sentence}</span>
-        <code className="hidden shrink-0 font-mono text-[11px] text-muted xl:inline">{call.tool}</code>
-        <VerdictPill verdict={call.verdict} />
+        <time className="hidden shrink-0 font-mono text-xs text-faint tabular-nums sm:inline">{clock(call.startedAt)}</time>
+        <VerdictGlyph verdict={call.verdict} />
+        <span className={`min-w-0 flex-1 truncate text-[15px] ${sentenceTone[call.verdict] ?? ''}`}>{sentence}</span>
+        <code className="hidden min-w-0 shrink truncate font-mono text-xs text-faint sm:inline">{call.tool}</code>
+        <VerdictWord verdict={call.verdict} />
       </button>
       {open && (
-        <div className="space-y-1.5 pr-3 pb-2 pl-14 text-xs">
+        <div className="space-y-2 pt-1 pb-3 text-xs sm:pl-[5.75rem]">
           <p className="text-muted">
             Decided by <span className="text-ink">{decidedBy(call)}</span>
             {call.reason && <span className="ml-1.5 font-mono">({call.reason})</span>}
-            <span className="ml-2">· {new Date(call.startedAt).toLocaleTimeString('en-GB')}</span>
           </p>
-          <pre className="overflow-x-auto rounded-md bg-panel-2 p-2 font-mono text-[11px] text-muted">{JSON.stringify(call.args, null, 2)}</pre>
+          <pre className="overflow-x-auto rounded-md bg-panel-2/70 p-3 font-mono text-xs text-muted">{call.tool} {JSON.stringify(call.args, null, 2)}</pre>
         </div>
       )}
     </li>
