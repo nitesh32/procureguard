@@ -16,8 +16,9 @@ The stack decided for the Guarded Procurement Agent. The blueprint is in [docs/B
 | Config | `zod` schema over `process.env`, validated at startup | Fails fast when a variable is missing |
 | Tests | Vitest | Unit, contract and guard tests on every run; real-ArmorIQ integration tests in a tagged suite run manually |
 | Scripts | `tsx` | Runs `check-setup` and `run-scenario` |
-| Public URL | ngrok fixed domain, run as a container in Compose. **Production hosting is decided later.** | ArmorIQ's cloud proxy must reach `/mcp` over public HTTPS |
-| Containers | Docker + Docker Compose | `docker compose up` starts `mcp-server`, `agent-service` (which also serves the dashboard) and `ngrok`. The same Dockerfiles are reused when we pick a host. |
+| Public URL | Locally: ngrok fixed domain, run as a container in Compose. Hosted: Railway's `*.up.railway.app` domains. | ArmorIQ's cloud proxy must reach `/mcp` over public HTTPS |
+| Containers | Docker + Docker Compose | `docker compose up` starts `mcp-server`, `agent-service` (which also serves the dashboard) and `ngrok` |
+| Hosting | Railway (trial credit, one week) | Two services from the same Dockerfiles, one instance each. Steps in [docs/DEPLOY.md](docs/DEPLOY.md). |
 | Task runner | Makefile | `make up`, `make dev`, `make down`, `make reset`, `make check`, `make scene N=…`, `make test`, `make logs` |
 
 ## Running locally

@@ -99,7 +99,7 @@ Three deployables plus a database:
 | `dashboard` | Runs scenarios, shows the live feed and data panels | Built static files, served by `agent-service` |
 | store | Sandbox data | In-memory, seeded from `seed/shop.json`; `reset` reloads the seed |
 
-**Hosting is decided later.** Locally, `make up` (Docker Compose) starts `mcp-server`, `agent-service` and an `ngrok` container that exposes `/mcp` on a fixed domain, so the URL registered in the ArmorIQ console never changes. `make dev` runs the same services without Docker, with hot reload.
+**Hosting is Railway** (two services, one instance each; see `docs/DEPLOY.md`). Locally, `make up` (Docker Compose) starts `mcp-server`, `agent-service` and an `ngrok` container that exposes `/mcp` on a fixed domain, so the URL registered in the ArmorIQ console never changes. `make dev` runs the same services without Docker, with hot reload.
 
 ## 3. Repo layout (adapt the file extensions to the stack)
 

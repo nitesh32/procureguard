@@ -2,6 +2,15 @@
 
 Answers to open questions and trade-offs, newest first.
 
+## 2026-10-17
+
+### Hosting: Railway, on the trial credit, for one week
+Two Railway services built from the existing Dockerfiles: `mcp-server` and `agent-service` (which also serves the dashboard). Each gets a public `*.up.railway.app` HTTPS domain, so ArmorIQ reaches `/mcp` without ngrok.
+- **Why Railway:** services never sleep, so the in-memory store and the 300 s hold survive. A week for two small Node services is about $1–2, inside the trial credit. Render's free tier sleeps after 15 minutes idle; Fly.io has no free tier; Vercel and Netlify are serverless.
+- **One instance per service.** The store is in memory, so neither service is ever scaled out.
+- **No code changes.** Each service's Dockerfile is picked with `RAILWAY_DOCKERFILE_PATH`, and each public domain targets the port the service already listens on (8788, 8787).
+- ngrok stays for local `make up`.
+
 ## 2026-10-13
 
 ### Policy design: one policy, with every order held
