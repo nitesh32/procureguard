@@ -281,10 +281,9 @@ Visual rules: `docs/DESIGN.md`.
   - "Protected by ArmorIQ"
   - No user switcher, ON/OFF toggle or reset button in the UI. The OFF comparison runs headless (`make scene N=3 OFF=1`); reset with `make reset`, Shift+R, or `?reset` in the URL.
 - **Scenario buttons:** the three scenes ("Check low stock", "Restock brake pads", "Process Apex quote"), plus a free-text prompt box.
-- **Chat (main column):** each turn shows a collapsible action trace, one row per tool call with a plain sentence, the tool name, a verdict badge (allowed / held / blocked / approved / not approved / check failed) and the reason and args on demand. A blocked row stays highlighted.
-- **ArmorIQ decisions (rail):** counts of allowed, held and blocked, and the latest decision in one line.
+- **Chat (main column):** each turn shows its action trace (always open), one row per tool call with the time, a plain sentence, the tool name, a verdict word (allowed / held / blocked / approved / not approved / check failed) and the reason and args on demand. Blocked rows are red text, held rows amber.
 - **Blocked card:** for a bank change, before/after: payments still go to the account on file, the requested account was not applied, decided by ArmorIQ policy.
-- **Side panels:** inventory (stock vs reorder level), orders (newest first), suppliers with their current masked payee account. During the scam scene this panel proves the account **did not change**.
+- **Side panel (plain text, no cards):** this session's allowed / held / blocked counts, a decision log (newest first), suppliers with their current masked payee account, low stock, review flags and orders (pending approval included). During the scam scene this panel proves the account **did not change**.
 - **Approval card:** appears on a hold with the item, amount, requester, reason and a countdown, plus the console link and the voice call.
 - **Agent answer:** the final message, shown at the bottom of the run.
 - **Receipt panel** (trust track): for each run, shows the signed plan hash or proof, and what was planned vs allowed vs blocked. Only if ArmorIQ's trace or proof export API is simple to call. Otherwise, use the console screenshot.
