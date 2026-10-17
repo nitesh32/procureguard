@@ -71,6 +71,7 @@ async function runAgent({ config, armoriq, log }: AgentDeps, request: RunRequest
         temperature: 0,
         maxTokens: 8192, // DeepSeek flash spends tokens reasoning; 4096 still ran out before the answer (finishReason=length)
         maxRetries: 3, // backoff on 429/5xx; refused tool calls are never retried
+        timeout: 60_000, // a stalled OpenRouter request once froze a demo run for 3.5 min; turns normally take ~10 s
       }),
       tools,
       systemPrompt,
