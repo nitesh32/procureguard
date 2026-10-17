@@ -16,7 +16,7 @@ Each row maps one hackathon requirement to where we meet it. Before submitting, 
 | 10 | At least one MCP server (rule 4) | Same as row 2 | |
 | 11 | Core development inside Oct 10–17 (rule 5) | Small, frequent, unsquashed commits | |
 | 12 | Disclose pre-existing code and assistants (rule 6) | Disclosure section in the README | |
-| 13 | Sandbox only, no real data or payments (rule 7) | `FAKE`-prefixed accounts, `.test` emails, SANDBOX label in the UI | |
+| 13 | Sandbox only, no real data or payments (rule 7) | `FAKE`-prefixed accounts, demo user emails kept in `.env` (never committed), Sandbox label in the UI | |
 | 14 | No attacks on ArmorIQ, others or third parties (rule 9) | The prompt injection targets only our own sandbox agent | |
 | 15 | No misrepresentation (rule 10) | Approvals are never faked; the OFF run is labelled "comparison only"; the README states known limitations | |
 | 16 | Submission: GitHub repo + README + setup steps | | |

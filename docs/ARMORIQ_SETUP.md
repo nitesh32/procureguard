@@ -58,7 +58,11 @@ The console should discover the 10 tools.
 📸 `docs/screenshots/02-agent-and-users.png`
 
 ## 5. Policy: one policy on `procurement-mcp`
-Go to **Policies → + Create Policy**.
+**Quick way:** go to **Policies → + Create Policy**, switch to the **YAML view**, paste [`policy.yaml`](../policy.yaml) from the repo root, and save. If the console replaces `target: procurement-mcp` with the server's id, keep its value. Then activate it (see below).
+
+`policy.yaml` is only the copy we paste from; the console is what enforces it. If you change the policy in the console, update the file too. Don't use `armoriq policy propose` from the SDK's CLI for this: it writes the org's armor profile (JSON) used by the coding-agent plugins, not an MCP policy.
+
+**By hand,** in the same form:
 - **Target:** MCP server `procurement-mcp`. The agent target lists no tools.
 - **Applies to:** members.
 - **Default action:** block.
@@ -109,5 +113,7 @@ make scene N=2    # expect: place_order … HOLD (approve in Intent → Held Act
 make scene N=3    # expect: update_payee_bank … BLOCK
 make test-live    # same two scenes as automated tests
 ```
+
+If `make check` shows `0/10 tools known to ArmorIQ` after the MCP container restarted (every call then blocks with `no_matching_policy`), re-sync or re-add `procurement-mcp` in the console (step 3), then check that `procurement-guard` is still attached and active. On Oct 17 this didn't recover on its own, so run `make check` after every restart.
 
 📸 `docs/screenshots/04-block-trace.png`: the console's audit or observability view of the **blocked `update_payee_bank`**, showing the matched policy, the plan and the agent name. **This is the required proof for the submission.**

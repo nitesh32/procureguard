@@ -1,0 +1,31 @@
+# procurement-guard: the one active ArmorIQ policy for this project.
+# Paste into the ArmorIQ console: Policies → + Create Policy → YAML view.
+# The console is what enforces it; this file is the source we paste from.
+# Keep it in sync with the policy table in README.md and docs/ARMORIQ_SETUP.md.
+name: procurement-guard
+scope:
+  target_type: mcp
+  target: procurement-mcp # the console may swap this for the server's id
+  caller: all
+default_action: block # any tool not listed below is blocked
+rules:
+  - tool: check_inventory
+    action: allow
+  - tool: list_suppliers
+    action: allow
+  - tool: get_quote
+    action: allow
+  - tool: read_quote_document
+    action: allow
+  - tool: add_note
+    action: allow
+  - tool: flag_for_review
+    action: allow
+  - tool: place_order
+    action: hold # approve in Intent → Held Actions
+  - tool: update_payee_bank
+    action: block
+  - tool: delete_supplier
+    action: block
+  - tool: export_supplier_list
+    action: block

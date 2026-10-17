@@ -14,10 +14,20 @@ Built for Flow State 2026. Sandbox only: every supplier, bank account and rupee 
 cp .env.example .env   # fill in keys: see docs/ARMORIQ_SETUP.md
 make install
 make up                # Docker: MCP server, agent + dashboard, ngrok tunnel
+```
+
+Then, in the [ArmorIQ console](https://platform.armoriq.ai):
+
+1. **MCP Servers:** add `procurement-mcp` at `https://<NGROK_DOMAIN>/mcp`. It should find 10 tools.
+2. **Inventory → Agents:** add `procurement-agent` (Custom, manual).
+3. **Policies → + Create Policy → YAML view:** paste [`policy.yaml`](policy.yaml), save it, and make it the only active policy.
+
+```bash
+make check             # every line OK
 open http://localhost:8787
 ```
 
-To develop with hot reload, use `make dev` and open http://localhost:5173.
+The full walkthrough, including the demo users, is in [docs/ARMORIQ_SETUP.md](docs/ARMORIQ_SETUP.md). To develop with hot reload, use `make dev` and open http://localhost:5173.
 
 ## How it works
 
@@ -41,7 +51,7 @@ Dashboard ──HTTP/SSE──► Agent service ──► ArmorIQ (plan → inte
 
 ## Policy (ArmorIQ console)
 
-One active policy, `procurement-guard`, targets the MCP server `procurement-mcp`. Any tool it doesn't list is blocked.
+One active policy, `procurement-guard`, targets the MCP server `procurement-mcp`. Any tool it doesn't list is blocked. It lives in [`policy.yaml`](policy.yaml), which you paste into the console's YAML view; the console is what enforces it.
 
 | Verdict | Tools |
 |---|---|
@@ -69,7 +79,7 @@ Run any scene headless with `make scene N=3` (add `OFF=1` for the comparison). T
 | `make dev` | All services with hot reload (dashboard on :5173) |
 | `make up` / `make down` / `make logs` | Run, stop and follow the Docker stack (with the ngrok tunnel) |
 | `make check` | Checks the `.env` file, that the MCP server is reachable with 10 tools, the ArmorIQ key, and that the agent and MCP server are registered |
-| `make scene N=1` | Run a scene headless and print the decision log |
+| `make scene N=1` | Run a scene headless and print the decision log (`OFF=1` without ArmorIQ, `AS=owner` as the owner) |
 | `make reset` | Restore the sandbox shop data |
 | `make test` | Unit, contract and guard tests (no network) |
 | `make test-live` | Scenes 1 and 3 against real ArmorIQ (uses credits) |
@@ -81,7 +91,8 @@ mcp-server/      10 MCP tools over Streamable HTTP, in-memory shop seeded from s
 agent-service/   LangChain agent + ArmorIQ adapter, run events over SSE, check-setup and run-scenario scripts
 dashboard/       React chat with the live action trace, ArmorIQ decisions, approval and blocked-change cards, shop panels, ElevenLabs voice
 shared/          the one logger both servers use
-docs/            blueprint, design system, decisions, ArmorIQ setup guide, screenshots
+policy.yaml      the ArmorIQ policy, pasted into the console
+docs/            blueprint, design system, decisions, ArmorIQ setup and deploy guides, screenshots
 ```
 
 ## Known limitations

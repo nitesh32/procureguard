@@ -26,10 +26,4 @@ The stack decided for the Guarded Procurement Agent. The blueprint is in [docs/B
 - **While coding:** `make dev` runs the packages directly with pnpm, with hot reload.
 - **For the demo and for judges:** `make up` runs everything in Docker Compose.
 
-Quickstart:
-
-```
-cp .env.example .env    # fill in keys
-make up
-open http://localhost:8787
-```
+Quickstart, including pasting [`policy.yaml`](policy.yaml) into the ArmorIQ console: see the [README](README.md#quickstart).

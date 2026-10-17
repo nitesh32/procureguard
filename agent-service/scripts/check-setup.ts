@@ -43,5 +43,5 @@ try {
   report('FAIL', 'ArmorIQ API key', (error as Error).message);
 }
 
-report('INFO', 'policies', 'the SDK cannot list policies; confirm the 4 policies in the console (docs/ARMORIQ_SETUP.md)');
+report('INFO', 'policies', 'the SDK cannot list policies; confirm procurement-guard (policy.yaml) is the only active policy in the console');
 process.exit(failed ? 1 : 0);

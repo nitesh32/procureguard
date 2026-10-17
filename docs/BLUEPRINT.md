@@ -110,23 +110,26 @@ guarded-procurement/
   Makefile                  # up, dev, down, reset, check, scene, test, logs
   docker-compose.yml        # mcp-server, agent-service, ngrok
   .env.example
+  policy.yaml               # procurement-guard, pasted into the console's YAML view
   docs/BLUEPRINT.md         # this file
   docs/COMPLIANCE.md        # hackathon rule → evidence checklist
   docs/DECISIONS.md         # answers to open questions, trade-offs
   docs/ARMORIQ_SETUP.md     # exact console steps, names and policy table (screenshots go here)
+  docs/DEPLOY.md            # Railway hosting steps
+  docs/DESIGN.md            # dashboard design system
   docs/screenshots/
   CLAUDE.md                 # code rules every coding session must follow
   shared/src/log.ts         # the one logger both servers use
   mcp-server/
-    src/tools/              # one file per tool group: reads, writes, money, dangerous
-    src/store/              # in-memory store, seed loader, reset
-    src/server              # MCP endpoint at /mcp + GET /health
+    src/tools/              # one file per tool group: reads, orders, notes, admin
+    src/store.ts            # in-memory store, seed loader, reset
+    src/mcp.ts, src/app.ts  # MCP endpoint at /mcp, GET /health, GET /state, POST /reset
   agent-service/
-    src/config              # env read and validated once, fail fast
-    src/agent               # LLM + framework + system prompt
-    src/armoriq             # scope creation, onEvent → event bus
-    src/voice               # ElevenLabs approval flow
-    src/api                 # POST /runs, GET /runs/:id/events (SSE), POST /reset
+    src/config.ts           # env read and validated once, fail fast
+    src/agent.ts            # LLM + LangChain agent + system prompt + ArmorIQ scope (onEvent → run events)
+    src/runs.ts             # run registry: records and logs every run event
+    src/app.ts              # POST /runs, GET /runs/:id/events (SSE), POST /approvals/:runId, POST /reset
+                            # (voice approval runs in the dashboard, VoiceApproval.tsx)
     scripts/check-setup     # verifies key, agent name, MCP name, MCP reachability
     scripts/run-scenario    # CLI: run scene 1, 2 or 3 headless
   dashboard/
@@ -251,7 +254,7 @@ Cover **every** tool that can move money or change payees. If a sibling tool is 
 - Keep the block rules in `procurement-guard` anyway, so the single-agent fallback still blocks.
 - If delegation isn't working by Oct 15, ship the single-agent version and leave it out of the README.
 
-**`scripts/check-setup`** prints OK or FAIL for each of: MCP reachable with 10 tools; API key valid; agent name registered; MCP name registered; at least one policy exists. It is read-only.
+**`scripts/check-setup`** prints OK or FAIL for each of: MCP reachable with 10 tools; API key valid; MCP name registered with 10 tools; agent name visible (INFO if not). The SDK can't list policies, so it only reminds you to confirm `procurement-guard` in the console. It is read-only.
 
 **`scripts/run-scenario 1|2|3`** runs the scenes headless and prints the decision log. Use it for testing and as a fallback in the video.
 
@@ -380,7 +383,7 @@ One small logger (`shared/src/log.ts`, `createLogger(service)`), with no depende
 | Service | Events |
 |---|---|
 | mcp-server | `server.started`, `store.seeded`, `store.reset`, `http.request.completed`, `tool.call.started`, `tool.call.succeeded`, `tool.call.rejected`, `tool.call.failed`, `reset.denied` |
-| agent-service | `server.started`, `run.started`, `run.tools.loaded`, `armoriq.scope.opened`, `tool.call.requested`, `tool.call.allowed`, `armoriq.call.held`, `armoriq.call.approved`, `armoriq.call.rejected`, `armoriq.call.timeout`, `armoriq.call.blocked`, `armoriq.enforcement.failed`, `tool.call.completed` (debug), `tool.call.errored`, `approval.decided`, `armoriq.scope.closed`, `run.completed`, `run.failed`. All run events are logged from one place, `createRunRegistry().record` in `agent-service/src/runs.ts`. LLM retries on 429/5xx are handled inside `ChatOpenAI` (`maxRetries: 3`). |
+| agent-service | `server.started`, `run.started`, `run.tools.loaded`, `armoriq.scope.opened`, `tool.call.requested`, `tool.call.allowed`, `armoriq.call.held`, `armoriq.call.approved`, `armoriq.call.rejected`, `armoriq.call.timeout`, `armoriq.call.blocked`, `armoriq.enforcement.failed`, `tool.call.completed` (debug), `tool.call.errored`, `approval.decided`, `armoriq.scope.closed`, `run.completed`, `run.failed`. All run events are logged from one place, `createRunRegistry().record` in `agent-service/src/runs.ts`. LLM retries on 429/5xx and on a stalled request (60 s timeout) are handled inside `ChatOpenAI` (`maxRetries: 3`). |
 
 ## 14. `.env.example`
 

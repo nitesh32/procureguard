@@ -2,7 +2,19 @@
 
 Answers to open questions and trade-offs, newest first.
 
+## 2026-10-18
+
+### The policy lives in `policy.yaml`
+The `procurement-guard` policy is now a file at the repo root, in the shape of the console's YAML view. The quickstart pastes it into **Policies → + Create Policy → YAML view**, instead of setting 10 tools by hand.
+- **The console still enforces it.** Nothing in our code reads `policy.yaml`. Neither does the SDK: `ArmorIQClient.fromConfig` parses a `policy` block from `armoriq.yaml`, but in `@armoriq/sdk@0.6.10` it never passes it on, so a local file can't allow or block anything.
+- **Not `armoriq policy propose`.** The SDK's CLI only stages the org's armor profile (armor.policy.v1 JSON) used by the coding-agent plugins, not an MCP policy.
+- A console change must be copied back into the file by hand.
+
 ## 2026-10-17
+
+### LLM request timeout and output budget
+- **`timeout: 60_000` on `ChatOpenAI`.** A stalled OpenRouter request once froze a demo run for 3.5 minutes; a turn normally takes about 10 s. A timed-out request is retried like a 429 or 5xx (`maxRetries: 3`).
+- **`maxTokens` is now 8192.** At 4096, DeepSeek flash still sometimes ran out of tokens while reasoning (`finishReason=length`).
 
 ### Hosting: Railway, on the trial credit, for one week
 Two Railway services built from the existing Dockerfiles: `mcp-server` and `agent-service` (which also serves the dashboard). Each gets a public `*.up.railway.app` HTTPS domain, so ArmorIQ reaches `/mcp` without ngrok.
