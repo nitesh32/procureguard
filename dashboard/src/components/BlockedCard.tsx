@@ -1,49 +1,49 @@
-import type { Call } from '../feed';
-import { Facts } from './HeldCard';
-import { VerdictPill } from './VerdictPill';
+import type { ShopState } from '../api';
+import { clock, type Call } from '../feed';
+import { Card, ConsoleLink, Footer } from './HeldCard';
 
 type BlockedCardProps = {
   call: Call;
   sentence: string;
-  supplierName?: string;
-  /** The payee account on file now, already masked by the shop. */
-  currentAccount?: string;
+  /** The payee on file now, already masked by the shop. */
+  currentPayee?: NonNullable<ShopState['suppliers'][number]['payee']>;
+  consoleUrl: string;
 };
 
 // Same mask as the shop's (mcp-server store): last 4 digits only.
 const mask = (accountNumber: string) => `••••${accountNumber.slice(-4)}`;
-const lowerFirst = (text: string) => text.charAt(0).toLowerCase() + text.slice(1);
 
-// What ArmorIQ stopped. A bank change shows before/after, Ramp style: payments
-// keep going to the verified account and the requested one is never applied.
-export function BlockedCard({ call, sentence, supplierName, currentAccount }: BlockedCardProps) {
-  const { supplierId, accountNumber } = call.args;
-  const summary = `The agent ${lowerFirst(sentence)}. ArmorIQ blocked it before it ran.`;
-
-  if (!supplierId || !accountNumber) {
-    return (
-      <p role="alert" className="flex flex-wrap items-center gap-2 rounded-lg border border-blocked/40 px-4 py-3 text-sm">
-        <VerdictPill verdict="blocked" />
-        <span className="min-w-0">{summary} Nothing changed.</span>
-      </p>
-    );
-  }
-
-  const rows: [string, string][] = [
-    ['Supplier', supplierName ?? String(supplierId)],
-    ['Payments still go to', `${currentAccount ?? 'the account on file'} (unchanged)`],
-    ['Requested', `${mask(String(accountNumber))} — not applied`],
-    ['Decided by', `ArmorIQ policy${call.reason ? ` (${call.reason})` : ''}`],
-  ];
+// What ArmorIQ stopped. A bank change shows before/after: payments keep going
+// to the verified account and the requested one is never applied.
+export function BlockedCard({ call, sentence, currentPayee, consoleUrl }: BlockedCardProps) {
+  const { accountNumber, ifsc } = call.args;
+  const bankChange = !!accountNumber;
 
   return (
-    <section role="alert" aria-label="Blocked attempt" className="rounded-lg border border-blocked/40 p-4">
-      <div className="flex flex-wrap items-center gap-2">
-        <VerdictPill verdict="blocked" />
-        <h3 className="text-[15px] font-semibold">Bank change blocked</h3>
-      </div>
-      <p className="mt-1 text-sm text-muted">{summary}</p>
-      <Facts rows={rows} />
-    </section>
+    <Card alert label="Blocked attempt" border="border-blocked/25" dot="bg-blocked" title={bankChange ? 'Bank change blocked by ArmorIQ' : 'Blocked by ArmorIQ'}>
+      {bankChange ? (
+        <div className="mt-4 space-y-1.5 text-[17px]">
+          <p>
+            Payments still go to <span className="font-mono font-medium tabular-nums">{currentPayee?.accountNumberMasked ?? 'the account on file'}</span>
+          </p>
+          <p>
+            Requested <s className="font-mono text-faint tabular-nums">{mask(String(accountNumber))}</s> not applied
+          </p>
+          {!!ifsc && (
+            <p className="pt-1 text-sm text-faint">
+              IFSC {currentPayee?.ifsc ?? 'on file'} unchanged · requested {String(ifsc)}
+            </p>
+          )}
+        </div>
+      ) : (
+        <p className="mt-4 text-[15px]">{sentence}. Nothing changed.</p>
+      )}
+      <Footer>
+        <span>
+          ArmorIQ reason: {call.reason ?? 'blocked'} · {clock(call.decidedAt ?? call.startedAt)} · nothing reached the shop
+        </span>
+        <ConsoleLink href={consoleUrl} />
+      </Footer>
+    </Card>
   );
 }

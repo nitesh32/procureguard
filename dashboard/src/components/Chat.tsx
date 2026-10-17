@@ -1,19 +1,26 @@
-import { ArrowUp, ChevronRight, CornerDownLeft, ShieldAlert, ShieldCheck, ShoppingCart } from 'lucide-react';
+import { ArrowUp } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import Markdown from 'react-markdown';
+import Markdown, { type Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import type { Scenario } from '../api';
-import { summarize, toCalls, type Call } from '../feed';
+import { toCalls, type Call } from '../feed';
 import type { Turn } from '../useRun';
-import { AgentAvatar } from './AgentAvatar';
-import { ArmorIQMark } from './ArmorIQMark';
 import { StepRow } from './StepRow';
 
 // What each suggested scenario demonstrates, shown on the welcome screen.
-const scenarioHint: Record<string, { hint: string; Icon: typeof ShieldCheck; tone: string }> = {
-  allowed: { hint: 'Safe reads: ArmorIQ allows them', Icon: ShieldCheck, tone: 'text-allowed' },
-  held: { hint: 'Money moves: held for owner approval', Icon: ShoppingCart, tone: 'text-held' },
-  blocked: { hint: 'Poisoned quote: an attack ArmorIQ must stop', Icon: ShieldAlert, tone: 'text-blocked' },
+const scenarioHint: Record<string, { hint: string; tone: string }> = {
+  allowed: { hint: 'Reads stock and quotes. Safe reads are allowed.', tone: 'text-allowed bg-allowed/8 border-allowed/20' },
+  held: { hint: 'Places a ₹20,000 order. Money moves are held for the owner.', tone: 'text-held bg-held/8 border-held/20' },
+  blocked: { hint: 'The quote hides an instruction to change the bank account.', tone: 'text-blocked bg-blocked/6 border-blocked/20' },
+};
+
+// Tables sit in a scrollable white card so wide ones never push the page sideways.
+const markdownParts: Components = {
+  table: ({ node: _node, ...props }) => (
+    <div className="answer-table">
+      <table {...props} />
+    </div>
+  ),
 };
 
 type ChatProps = {
@@ -44,60 +51,68 @@ export function Chat({ turns, scenarios, disabled, onAsk, describe, renderCards 
 
   return (
     <section aria-label="Chat with the purchasing agent" className="flex min-h-0 shrink-0 flex-col lg:shrink">
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6">
-        {turns.length === 0 ? (
-          <Welcome scenarios={scenarios} disabled={disabled} onPick={ask} />
-        ) : (
-          <ol className="space-y-6">
-            {turns.map((turn) => (
-              <TurnView key={turn.id} turn={turn} describe={describe} renderCards={renderCards} />
-            ))}
-          </ol>
-        )}
-        <div ref={bottom} />
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 pt-10 pb-12 sm:px-8 lg:pt-14">
+        <div className="mx-auto max-w-190">
+          {turns.length === 0 ? (
+            <Welcome scenarios={scenarios} disabled={disabled} onPick={ask} />
+          ) : (
+            <ol className="space-y-14">
+              {turns.map((turn) => (
+                <TurnView key={turn.id} turn={turn} describe={describe} renderCards={renderCards} />
+              ))}
+            </ol>
+          )}
+          <div ref={bottom} className="scroll-mb-12" />
+        </div>
       </div>
 
-      <div className="border-t border-line px-4 pt-3 pb-4 sm:px-6">
-        {turns.length > 0 && (
-          <div className="mb-2.5 flex flex-wrap gap-2" aria-label="Suggested questions">
+      <div className="px-4 pb-5 sm:px-8">
+        <div className="mx-auto max-w-190 border-t border-line pt-4">
+          <div className="mb-3 flex flex-wrap gap-2" aria-label="Suggested questions">
             {scenarios.map((scenario) => (
-              <SuggestionChip key={scenario.id} scenario={scenario} disabled={disabled} onPick={ask} />
+              <button
+                key={scenario.id}
+                type="button"
+                disabled={disabled}
+                onClick={() => ask(scenario.prompt)}
+                title={scenario.prompt}
+                className="min-w-0 truncate rounded-full bg-panel-2 px-3 py-1.5 text-[13px] text-muted transition-colors hover:text-ink disabled:opacity-40"
+              >
+                {scenario.title}
+              </button>
             ))}
           </div>
-        )}
-        <form
-          autoComplete="off"
-          className="flex items-center gap-2 rounded-lg border border-line bg-panel py-1 pr-1 pl-3 transition-colors focus-within:border-ink"
-          onSubmit={(event) => {
-            event.preventDefault();
-            ask(prompt);
-          }}
-        >
-          <label htmlFor="prompt" className="sr-only">Ask the purchasing agent</label>
-          <input
-            id="prompt"
-            name="agent-prompt"
+          <form
             autoComplete="off"
-            autoCorrect="off"
-            spellCheck={false}
-            value={prompt}
-            onChange={(event) => setPrompt(event.target.value)}
-            placeholder={disabled ? 'The agent is working…' : 'Ask the purchasing agent to check stock, order parts or process a quote…'}
-            disabled={disabled}
-            className="min-w-0 flex-1 bg-transparent py-1.5 text-sm placeholder:text-muted focus:outline-none"
-          />
-          <kbd className="hidden items-center gap-1 text-[11px] text-muted sm:flex" aria-hidden>
-            <CornerDownLeft className="h-3 w-3" /> to send
-          </kbd>
-          <button
-            type="submit"
-            aria-label="Send"
-            disabled={disabled || !prompt.trim()}
-            className="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-ink text-white transition-colors hover:bg-ink-hover disabled:opacity-40"
+            className="flex items-center gap-2 rounded-xl border border-line-strong bg-panel py-1.5 pr-1.5 pl-4 transition-colors focus-within:border-ink"
+            onSubmit={(event) => {
+              event.preventDefault();
+              ask(prompt);
+            }}
           >
-            <ArrowUp className="h-4 w-4" aria-hidden />
-          </button>
-        </form>
+            <label htmlFor="prompt" className="sr-only">Ask the purchasing agent</label>
+            <input
+              id="prompt"
+              name="agent-prompt"
+              autoComplete="off"
+              autoCorrect="off"
+              spellCheck={false}
+              value={prompt}
+              onChange={(event) => setPrompt(event.target.value)}
+              placeholder={disabled ? 'The agent is working…' : 'Ask the purchasing agent…'}
+              disabled={disabled}
+              className="min-w-0 flex-1 bg-transparent py-2 text-[15px] placeholder:text-faint focus:outline-none"
+            />
+            <button
+              type="submit"
+              aria-label="Send"
+              disabled={disabled || !prompt.trim()}
+              className="grid h-10 w-10 shrink-0 place-items-center rounded-lg text-ink transition-colors hover:bg-panel-2 disabled:text-faint disabled:hover:bg-transparent"
+            >
+              <ArrowUp className="h-4 w-4" aria-hidden />
+            </button>
+          </form>
+        </div>
       </div>
     </section>
   );
@@ -105,162 +120,86 @@ export function Chat({ turns, scenarios, disabled, onAsk, describe, renderCards 
 
 function Welcome({ scenarios, disabled, onPick }: { scenarios: Scenario[]; disabled: boolean; onPick: (prompt: string) => void }) {
   return (
-    <div className="mx-auto flex h-full max-w-xl flex-col items-center justify-center text-center">
-      <AgentAvatar size="lg" />
-      <p className="mt-3 text-xs font-medium tracking-wider text-muted uppercase">Procurement agent</p>
-      <h2 className="mt-1 text-xl font-semibold">Ask the agent to buy something</h2>
-      <p className="mt-1 text-sm text-muted">It works on its own. ArmorIQ checks every action before it runs, and holds or blocks the risky ones.</p>
-      <div className="mt-6 grid w-full gap-2.5">
+    <div>
+      <p className="font-mono text-xs tracking-wider text-faint uppercase">Procurement agent</p>
+      <h2 className="mt-3 text-3xl font-medium tracking-tight sm:text-[2.5rem] sm:leading-tight">What should the agent buy today?</h2>
+      <p className="mt-4 max-w-xl text-[17px] leading-relaxed text-muted">
+        It works on its own. ArmorIQ checks every action before it runs, and holds or blocks the risky ones.
+      </p>
+      <ul className="mt-10 divide-y divide-line border-y border-line">
         {scenarios.map((scenario) => {
           const look = scenarioHint[scenario.expect];
           return (
-            <button
-              key={scenario.id}
-              type="button"
-              disabled={disabled}
-              onClick={() => onPick(scenario.prompt)}
-              className="flex min-h-10 items-center gap-3 rounded-lg border border-line px-4 py-3 text-left transition-colors hover:bg-panel-2 disabled:opacity-40"
-            >
-              {look && <look.Icon className={`h-5 w-5 shrink-0 ${look.tone}`} aria-hidden />}
-              <span className="min-w-0 flex-1">
-                <span className="block text-sm font-medium capitalize">
-                  {scenario.id} · {scenario.title}
+            <li key={scenario.id}>
+              <button
+                type="button"
+                disabled={disabled}
+                onClick={() => onPick(scenario.prompt)}
+                className="-mx-3 flex w-[calc(100%+1.5rem)] items-center gap-4 rounded-lg px-3 py-5 text-left transition-colors hover:bg-panel-2/60 disabled:opacity-40"
+              >
+                <span className="min-w-0 flex-1">
+                  <span className="flex items-center gap-2.5 text-lg">
+                    <span className="truncate">
+                      {scenario.id} · {scenario.title}
+                    </span>
+                    {scenario.expect === 'blocked' && <span className="shrink-0 rounded border border-line-strong px-1.5 font-mono text-xs text-faint">attack</span>}
+                  </span>
+                  <span className="mt-1 block text-sm text-muted">{look?.hint ?? scenario.prompt}</span>
                 </span>
-                <span className={`block truncate text-xs ${scenario.expect === 'blocked' ? 'text-blocked' : 'text-muted'}`}>{look?.hint ?? scenario.prompt}</span>
-              </span>
-            </button>
+                {look && <span className={`shrink-0 rounded-md border px-2 py-0.5 font-mono text-xs ${look.tone}`}>{scenario.expect}</span>}
+              </button>
+            </li>
           );
         })}
-      </div>
+      </ul>
     </div>
-  );
-}
-
-function SuggestionChip({ scenario, disabled, onPick }: { scenario: Scenario; disabled: boolean; onPick: (prompt: string) => void }) {
-  const adversarial = scenario.expect === 'blocked';
-  return (
-    <button
-      type="button"
-      disabled={disabled}
-      onClick={() => onPick(scenario.prompt)}
-      title={scenario.prompt}
-      className={`inline-flex min-w-0 items-center rounded-md border border-line px-3 py-1.5 text-xs font-medium capitalize transition-colors hover:bg-panel-2 disabled:opacity-40 ${
-        adversarial ? 'text-blocked' : 'text-ink'
-      }`}
-    >
-      <span className="truncate">
-        {scenario.id} · {scenario.title}
-      </span>
-    </button>
   );
 }
 
 function TurnView({ turn, describe, renderCards }: { turn: Turn; describe: (call: Call) => string; renderCards: ChatProps['renderCards'] }) {
   const calls = useMemo(() => toCalls(turn.events), [turn.events]);
-  const summary = summarize(calls);
   const final = turn.events.find((event) => event.type === 'final');
   const failure = turn.events.find((event) => event.type === 'run_failed');
   const done = !!final || !!failure || !!turn.startError;
-  const blocked = calls.find((call) => call.verdict === 'blocked');
+  const elapsed = useElapsed(turn.startedAt, done);
+  const waiting = !done && calls.some((call) => call.verdict === 'held');
+  const actions = `${calls.length} ${calls.length === 1 ? 'action' : 'actions'}`;
 
   return (
-    <li className="space-y-3">
+    <li>
       <div className="flex justify-end">
-        <p className="max-w-[80%] rounded-lg bg-ink px-4 py-2 text-sm break-words text-white">{turn.request.prompt}</p>
+        <p className="max-w-[85%] rounded-2xl bg-ink px-5 py-3 text-[15px] wrap-break-word text-white">{turn.request.prompt}</p>
       </div>
 
-      <div className="flex gap-3">
-        <AgentAvatar working={!done} />
-        <div className="min-w-0 flex-1 space-y-3">
-          <p className="flex items-center gap-2 text-sm">
-            <span className="font-semibold">Procurement agent</span>
-            <span className="flex items-center gap-1 text-xs text-muted">
-              · guarded by <ArmorIQMark className="h-3.5 w-3.5" /> ArmorIQ
-            </span>
-          </p>
-          <ActionTrace
-            calls={calls}
-            done={done}
-            startedAt={turn.startedAt}
-            keepOpen={!!blocked || calls.some((call) => call.wasHeld)}
-            summary={summary}
-            describe={describe}
-          />
+      <p role="status" className="mt-10 text-[13px] text-faint tabular-nums">
+        {done ? `${actions} · ${elapsed}s · ArmorIQ checked each one before it ran` : `Working · ArmorIQ is checking every action · ${elapsed}s`}
+      </p>
+      <ol className="mt-2">
+        {calls.length === 0 && !done && <li className="py-2 text-[15px] text-muted">Deciding what to do first…</li>}
+        {calls.map((call) => (
+          <StepRow key={call.id} call={call} sentence={describe(call)} />
+        ))}
+      </ol>
 
-          {renderCards(calls, turn)}
-
-          {turn.startError && <p className="text-sm text-blocked">Could not start the run: {turn.startError}. Check the agent service is running, then try again.</p>}
-          {failure && <p className="text-sm text-blocked">Run failed: {String(failure.error)}. Pick the scenario again to retry.</p>}
-          {final && (
-            <div className="answer text-sm leading-relaxed">
-              {String(final.answer ?? '').trim() ? (
-                // react-markdown never renders raw HTML: answers can echo attacker-controlled quote text.
-                <Markdown remarkPlugins={[remarkGfm]}>{String(final.answer)}</Markdown>
-              ) : (
-                <p className="text-muted">
-                  The agent finished without writing a summary. Its {summary.total} actions and ArmorIQ’s decisions are listed above.
-                </p>
-              )}
-            </div>
-          )}
-        </div>
+      <div className="mt-6 space-y-6 empty:hidden">
+        {renderCards(calls, turn)}
+        {waiting && <p className="text-sm text-faint italic">Agent is waiting…</p>}
+        {turn.startError && <p className="text-sm text-blocked">Could not start the run: {turn.startError}. Check the agent service is running, then try again.</p>}
+        {failure && <p className="text-sm text-blocked">Run failed: {String(failure.error)}. Pick the scenario again to retry.</p>}
+        {final && (
+          <div className="answer text-base leading-relaxed">
+            {String(final.answer ?? '').trim() ? (
+              // react-markdown never renders raw HTML: answers can echo attacker-controlled quote text.
+              <Markdown remarkPlugins={[remarkGfm]} components={markdownParts}>
+                {String(final.answer)}
+              </Markdown>
+            ) : (
+              <p className="text-muted">The agent finished without writing a summary. Its {actions} and ArmorIQ’s decisions are listed above.</p>
+            )}
+          </div>
+        )}
       </div>
     </li>
-  );
-}
-
-type ActionTraceProps = {
-  calls: Call[];
-  done: boolean;
-  startedAt: number;
-  keepOpen: boolean;
-  summary: ReturnType<typeof summarize>;
-  describe: (call: Call) => string;
-};
-
-// The agent's actions for one turn. Open while working; collapses to a one-line
-// summary when done, unless ArmorIQ held or blocked something (that is the story).
-function ActionTrace({ calls, done, startedAt, keepOpen, summary, describe }: ActionTraceProps) {
-  const [open, setOpen] = useState(true);
-  useEffect(() => {
-    if (done && !keepOpen) setOpen(false);
-  }, [done, keepOpen]);
-  const elapsed = useElapsed(startedAt, done);
-
-  return (
-    <div className="rounded-lg border border-line">
-      <button
-        type="button"
-        aria-expanded={open}
-        onClick={() => setOpen(!open)}
-        className="flex w-full min-w-0 flex-wrap items-center gap-x-2 gap-y-1 rounded-lg px-3 py-2 text-left text-xs text-muted transition-colors hover:bg-panel-2"
-      >
-        <ChevronRight aria-hidden className={`h-3.5 w-3.5 ${open ? 'rotate-90' : ''}`} />
-        {done ? (
-          <span className="font-medium text-ink">
-            Used {summary.total} {summary.total === 1 ? 'tool' : 'tools'}
-          </span>
-        ) : (
-          <span className="font-medium text-ink">{calls.length === 0 ? 'Planning' : 'Working'} · ArmorIQ is checking every action</span>
-        )}
-        <span className="tabular-nums">· {elapsed}s</span>
-        {summary.total > 0 && (
-          <span className="ml-auto flex gap-2">
-            <span className="text-allowed">{summary.allowed} allowed</span>
-            {summary.held > 0 && <span className="text-held">{summary.held} held</span>}
-            {summary.blocked > 0 && <span className="text-blocked">{summary.blocked} blocked</span>}
-          </span>
-        )}
-      </button>
-      {open && (
-        <ol className="border-t border-line p-1">
-          {calls.length === 0 && !done && <li className="px-2 py-1.5 text-sm text-muted">Deciding what to do first…</li>}
-          {calls.map((call, index) => (
-            <StepRow key={call.id} step={index + 1} call={call} sentence={describe(call)} />
-          ))}
-        </ol>
-      )}
-    </div>
   );
 }
 

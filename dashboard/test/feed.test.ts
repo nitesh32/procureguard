@@ -30,7 +30,8 @@ describe('toCalls', () => {
     const held = [event('call', { callId: 'a', tool: 'place_order', args: { amount: 20000 } }), event('hold', { tool: 'place_order', reason: 'rule_action_hold' })];
     expect(toCalls(held)[0]).toMatchObject({ verdict: 'held', wasHeld: true });
     expect(toCalls([...held, event('approved', { tool: 'place_order' }), event('allowed', { callId: 'a', tool: 'place_order' })])[0].verdict).toBe('approved');
-    expect(toCalls([...held, event('timeout', { tool: 'place_order' })])[0].verdict).toBe('rejected');
+    const later = { at: '2026-10-16T10:01:00.000Z' };
+    expect(toCalls([...held, event('timeout', { tool: 'place_order', ...later })])[0]).toMatchObject({ verdict: 'rejected', heldAt: Date.parse(at) });
   });
 
   it('keeps a failed ArmorIQ check apart from a policy block', () => {

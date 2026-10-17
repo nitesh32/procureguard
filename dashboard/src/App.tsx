@@ -2,12 +2,11 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { api, type DashboardConfig, type Scenario, type ShopState } from './api';
 import { BlockedCard } from './components/BlockedCard';
 import { Chat } from './components/Chat';
-import { Decisions } from './components/Decisions';
 import { Header } from './components/Header';
 import { HeldCard } from './components/HeldCard';
+import { SidePanel } from './components/SidePanel';
 import { VoiceApproval } from './components/VoiceApproval';
-import { WorldTabs } from './components/WorldTabs';
-import { describeCall, holdReason, summarize, toCalls, type Call } from './feed';
+import { describeCall, holdReason, toCalls, type Call } from './feed';
 import { useRun, type Turn } from './useRun';
 
 // Events after which the shop data may have changed.
@@ -58,10 +57,8 @@ export function App() {
     if (lastEvent && shopChangingEvents.has(lastEvent.type)) void refreshShop().catch(() => setApiDown(true));
   }, [lastEvent, refreshShop]);
 
-  // Totals and world effects cover the whole conversation; the rail shows the newest decision.
+  // The side panel covers the whole conversation.
   const allCalls = useMemo(() => run.turns.flatMap((turn) => toCalls(turn.events)), [run.turns]);
-  const currentCalls = useMemo(() => (run.current ? toCalls(run.current.events) : []), [run.current]);
-  const latest = currentCalls.at(-1);
 
   const names = useMemo(
     () => ({
@@ -82,12 +79,12 @@ export function App() {
     const decision = turn.events.findLast((event) => event.type === 'approval_decided')?.decision;
     return (
       <>
-        {blocked && (
+        {blocked && config && (
           <BlockedCard
             call={blocked}
             sentence={describe(blocked)}
-            supplierName={names.suppliers[String(blocked.args.supplierId)]}
-            currentAccount={shop?.suppliers.find((s) => s.id === blocked.args.supplierId)?.payee?.accountNumberMasked}
+            currentPayee={shop?.suppliers.find((s) => s.id === blocked.args.supplierId)?.payee}
+            consoleUrl={config.armoriqConsoleUrl}
           />
         )}
         {held && why && config && (
@@ -128,12 +125,9 @@ export function App() {
           </button>
         </div>
       )}
-      <main className="mx-auto flex min-h-0 w-full max-w-[1600px] flex-1 flex-col overflow-y-auto lg:grid lg:grid-cols-[minmax(0,1fr)_400px] lg:overflow-hidden">
+      <main className="mx-auto flex min-h-0 w-full max-w-[1440px] flex-1 flex-col overflow-y-auto lg:grid lg:grid-cols-[minmax(0,1fr)_380px] lg:overflow-hidden">
         <Chat turns={run.turns} scenarios={scenarios} disabled={run.running || !config} onAsk={ask} describe={describe} renderCards={renderCards} />
-        <aside aria-label="ArmorIQ decisions and shop data" className="flex min-h-0 shrink-0 flex-col border-t border-line lg:border-t-0 lg:border-l">
-          <Decisions summary={summarize(allCalls)} latest={latest} />
-          <WorldTabs shop={shop} calls={allCalls} />
-        </aside>
+        <SidePanel shop={shop} calls={allCalls} />
       </main>
     </div>
   );

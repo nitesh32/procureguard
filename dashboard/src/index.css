@@ -60,13 +60,14 @@ input:disabled {
 }
 
 /* Agent answer rendered from Markdown */
-.answer > * + * { margin-top: 0.75rem; }
+.answer > * + * { margin-top: 1rem; }
 .answer strong { font-weight: 600; }
 .answer ul { list-style: disc; padding-left: 1.25rem; }
 .answer ol { list-style: decimal; padding-left: 1.25rem; }
 .answer h1, .answer h2, .answer h3 { font-weight: 600; font-size: 1rem; }
 .answer code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--color-panel-2); padding: 0.05rem 0.3rem; border-radius: 4px; }
-.answer table { display: block; overflow-x: auto; width: 100%; border: 1px solid var(--color-line); border-radius: 0.75rem; background: var(--color-panel); padding: 0.5rem 1.25rem; font-size: 0.875rem; border-collapse: collapse; }
+.answer-table { overflow-x: auto; border: 1px solid var(--color-line); border-radius: 0.75rem; background: var(--color-panel); padding: 0.5rem 1.5rem; }
+.answer table { width: 100%; font-size: 0.9375rem; border-collapse: collapse; }
 .answer th, .answer td { padding: 0.65rem 0.75rem 0.65rem 0; text-align: left; white-space: nowrap; }
 .answer th:last-child, .answer td:last-child { padding-right: 0; }
 .answer th { color: var(--color-faint); font-weight: 400; font-size: 0.8125rem; }

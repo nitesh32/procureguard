@@ -16,6 +16,8 @@ export type Call = {
   result?: string;
   startedAt: number;
   decidedAt?: number;
+  /** When ArmorIQ held it; stays set after the owner's decision. */
+  heldAt?: number;
 };
 
 const armoriqVerdicts: Record<string, Verdict> = {
@@ -49,6 +51,7 @@ export function toCalls(events: RunEvent[]): Call[] {
       if (!call) continue;
       call.verdict = armoriqVerdict;
       call.wasHeld ||= armoriqVerdict === 'held';
+      if (armoriqVerdict === 'held') call.heldAt = at;
       call.reason = event.reason ?? event.error ?? call.reason;
       call.decidedAt = at;
       continue;
@@ -89,6 +92,9 @@ export function summarize(calls: Call[]) {
 export const holdReason = (reason?: string) => (!reason || reason === 'rule_action_hold' ? 'every purchase order needs owner approval' : reason);
 
 export const rupees = (amount: number) => `₹${amount.toLocaleString('en-IN')}`;
+
+/** HH:MM:SS, for step times, the decision log and card footnotes. */
+export const clock = (at: number) => new Date(at).toLocaleTimeString('en-GB');
 
 type Names = { suppliers: Record<string, string>; items: Record<string, string> };
 
